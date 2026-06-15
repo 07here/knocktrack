@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="KnockTrack">
+<meta name="theme-color" content="#0f172a">
+<title>KnockTrack</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface2: #263347;
+    --border: rgba(255,255,255,0.08);
+    --border2: rgba(255,255,255,0.14);
+    --text: #f1f5f9;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --accent-dim: rgba(56,189,248,0.12);
+    --green: #4ade80;
+    --green-dim: rgba(74,222,128,0.12);
+    --red: #f87171;
+    --red-dim: rgba(248,113,113,0.12);
+    --amber: #fbbf24;
+    --amber-dim: rgba(251,191,36,0.12);
+    --radius: 14px;
+    --radius-sm: 8px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
+    font-size: 16px;
+    line-height: 1.5;
+    overscroll-behavior: none;
+  }
+
+  /* ---- App shell ---- */
+  #app {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* ---- Header ---- */
+  #header {
+    padding: calc(var(--safe-top) + 14px) 20px 12px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+  #header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  #app-name { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; color: var(--text); }
+  #app-name span { color: var(--accent); }
+  #session-badge {
+    font-size: 12px;
+    font-weight: 600;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border: 1px solid rgba(56,189,248,0.25);
+    border-radius: 99px;
+    padding: 3px 10px;
+    display: none;
+  }
+
+  /* Running counters bar */
+  #counter-bar {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 2px;
+  }
+  #counter-bar::-webkit-scrollbar { display: none; }
+  .counter-pill {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 6px 10px;
+    min-width: 58px;
+  }
+  .counter-pill.highlight { background: var(--green-dim); border-color: rgba(74,222,128,0.25); }
+  .counter-num {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+  }
+  .counter-pill.highlight .counter-num { color: var(--green); }
+  .counter-lbl {
+    font-size: 9px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-top: 3px;
+    white-space: nowrap;
+  }
+
+  /* ---- Nav ---- */
+  #nav {
+    display: flex;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    padding-bottom: var(--safe-bottom);
+    flex-shrink: 0;
+  }
+  .nav-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 4px 8px;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 10px;
+    font-weight: 600;
+    cursor: pointer;
+    gap: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    transition: color 0.15s;
+  }
+  .nav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .nav-btn.active { color: var(--accent); }
+
+  /* ---- Scroll area ---- */
+  #content {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* ---- Pages ---- */
+  .page { display: none; padding: 16px; }
+  .page.active { display: block; }
+
+  /* ---- Cards ---- */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px;
+    margin-bottom: 12px;
+  }
+  .card-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 12px;
+  }
+
+  /* ---- Session panel ---- */
+  #no-session-msg { text-align: center; padding: 8px 0 4px; }
+  #no-session-msg p { color: var(--muted); font-size: 14px; margin-bottom: 12px; }
+
+  #active-session-info { display: none; margin-bottom: 12px; }
+  #asi-postcode { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+  #asi-date { font-size: 13px; color: var(--muted); }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* ---- Form fields ---- */
+  label.field-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  input[type="text"], select {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    color: var(--text);
+    font-size: 16px;
+    padding: 11px 13px;
+    outline: none;
+    appearance: none;
+    -webkit-appearance: none;
+    font-family: inherit;
+  }
+  input[type="text"]:focus, select:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(56,189,248,0.15);
+  }
+  input::placeholder { color: var(--muted); opacity: 0.6; }
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 13px center; padding-right: 36px; }
+
+  /* ---- Toggle buttons ---- */
+  #toggle-section { display: none; margin-top: 14px; }
+  #toggle-section .card-title { margin-bottom: 10px; }
+  .toggle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .tog-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 12px 13px;
+    cursor: pointer;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .tog-btn .tog-icon { font-size: 18px; }
+  .tog-btn .tog-state {
+    width: 28px; height: 18px;
+    border-radius: 99px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--surface);
+    color: var(--muted);
+    border: 1px solid var(--border2);
+  }
+  .tog-btn.state-yes { background: var(--green-dim); border-color: rgba(74,222,128,0.3); }
+  .tog-btn.state-yes .tog-state { background: var(--green); color: #0f172a; border-color: transparent; }
+  .tog-btn.state-no { background: var(--red-dim); border-color: rgba(248,113,113,0.3); }
+  .tog-btn.state-no .tog-state { background: var(--red); color: #0f172a; border-color: transparent; }
+
+  /* ---- Primary button ---- */
+  .btn-primary {
+    width: 100%;
+    background: var(--accent);
+    color: #0f172a;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s, transform 0.1s;
+    font-family: inherit;
+  }
+  .btn-primary:active { opacity: 0.85; transform: scale(0.98); }
+  .btn-secondary {
+    width: 100%;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border2);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .btn-secondary:hover { border-color: var(--red); color: var(--red); }
+  .btn-danger { color: var(--red); border-color: rgba(248,113,113,0.3); }
+  .btn-danger:hover { background: var(--red-dim); }
+
+  /* ---- Toast ---- */
+  #toast {
+    position: fixed;
+    bottom: calc(60px + var(--safe-bottom) + 12px);
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: var(--green);
+    color: #0f172a;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 20px;
+    border-radius: 99px;
+    opacity: 0;
+    transition: all 0.25s;
+    pointer-events: none;
+    white-space: nowrap;
+    z-index: 100;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  /* ---- History ---- */
+  .session-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .session-card-header {
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    cursor: pointer;
+    user-select: none;
+  }
+  .session-card-header:active { background: var(--surface2); }
+  .sc-postcode { font-size: 17px; font-weight: 700; }
+  .sc-date { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .sc-summary { display: flex; gap: 10px; align-items: center; }
+  .sc-badge { font-size: 12px; font-weight: 700; color: var(--green); background: var(--green-dim); border-radius: 99px; padding: 2px 9px; }
+  .sc-chevron { color: var(--muted); font-size: 18px; transition: transform 0.2s; }
+  .sc-chevron.open { transform: rotate(180deg); }
+
+  .session-entries { display: none; border-top: 1px solid var(--border); }
+  .session-entries.open { display: block; }
+
+  /* Mini counters inside session */
+  .session-mini-counters {
+    display: flex;
+    gap: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .smc-item {
+    flex: 1;
+    text-align: center;
+    padding: 10px 4px;
+    border-right: 1px solid var(--border);
+  }
+  .smc-item:last-child { border-right: none; }
+  .smc-num { font-size: 18px; font-weight: 700; color: var(--text); }
+  .smc-lbl { font-size: 9px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+
+  /* Entry rows */
+  .entry-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    gap: 10px;
+  }
+  .entry-row:last-child { border-bottom: none; }
+  .entry-house { font-size: 15px; font-weight: 700; min-width: 50px; }
+  .entry-status { font-size: 12px; color: var(--muted); flex: 1; }
+  .entry-badges { display: flex; gap: 4px; }
+  .ebadge {
+    width: 22px; height: 22px;
+    border-radius: 5px;
+    font-size: 10px;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .ebadge-y { background: var(--green-dim); color: var(--green); }
+  .ebadge-n { background: var(--red-dim); color: var(--red); }
+  .ebadge-na { background: var(--surface2); color: var(--muted); }
+  .entry-del {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 4px;
+    line-height: 1;
+    border-radius: 6px;
+  }
+  .entry-del:active { color: var(--red); background: var(--red-dim); }
+  .entry-notes { font-size: 11px; color: var(--amber); margin-top: 2px; }
+
+  /* ---- Stats page ---- */
+  .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 10px;
+    text-align: center;
+  }
+  .stat-card.sale-card { background: var(--green-dim); border-color: rgba(74,222,128,0.25); }
+  .stat-num { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1; }
+  .sale-card .stat-num { color: var(--green); }
+  .stat-name { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 4px; }
+
+  /* Funnel */
+  .funnel-row {
+    display: flex;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    gap: 12px;
+  }
+  .funnel-row:last-child { border-bottom: none; }
+  .funnel-label { font-size: 14px; font-weight: 600; flex: 1; }
+  .funnel-count { font-size: 14px; font-weight: 700; color: var(--text); min-width: 30px; text-align: right; }
+  .funnel-pct { font-size: 12px; color: var(--muted); min-width: 42px; text-align: right; }
+  .funnel-bar-wrap { flex: 2; background: var(--surface2); border-radius: 99px; height: 6px; overflow: hidden; }
+  .funnel-bar { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.5s ease; }
+  .funnel-bar.green { background: var(--green); }
+
+  /* Per-day table */
+  .day-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .day-table th { text-align: left; color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 8px; border-bottom: 1px solid var(--border); }
+  .day-table td { padding: 9px 8px; border-bottom: 1px solid var(--border); color: var(--text); }
+  .day-table tr:last-child td { border-bottom: none; }
+  .day-table td:nth-child(n+3) { text-align: center; font-weight: 700; }
+  .day-table .sale-cell { color: var(--green); }
+  .day-table .zero { color: var(--surface2); }
+
+  /* Empty state */
+  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty-state h3 { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
+  .empty-state p { font-size: 14px; line-height: 1.6; }
+
+  /* Utility */
+  .mt8 { margin-top: 8px; }
+  .mt12 { margin-top: 12px; }
+  .mb12 { margin-bottom: 12px; }
+  .divider { height: 1px; background: var(--border); margin: 12px 0; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="header">
+    <div id="header-top">
+      <div>
+        <div id="app-name">Knock<span>Track</span></div>
+        <div id="day-label" style="font-size:11px;color:var(--muted);margin-top:1px;display:none"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <div id="session-badge">● LIVE</div>
+        <button id="new-day-btn" onclick="confirmNewDay()" style="display:none;background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.3);color:var(--red);border-radius:99px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">New day</button>
+      </div>
+    </div>
+    <div id="counter-bar">
+      <div class="counter-pill" id="c-knocked"><div class="counter-num" id="cn-knocked">0</div><div class="counter-lbl">Knocked</div></div>
+      <div class="counter-pill" id="c-spoke"><div class="counter-num" id="cn-spoke">0</div><div class="counter-lbl">Spoke</div></div>
+      <div class="counter-pill" id="c-speed"><div class="counter-num" id="cn-speed">0</div><div class="counter-lbl">Speed</div></div>
+      <div class="counter-pill" id="c-pres"><div class="counter-num" id="cn-pres">0</div><div class="counter-lbl">Presentation</div></div>
+      <div class="counter-pill" id="c-close"><div class="counter-num" id="cn-close">0</div><div class="counter-lbl">Close</div></div>
+      <div class="counter-pill highlight" id="c-sale"><div class="counter-num" id="cn-sale">0</div><div class="counter-lbl">Sales</div></div>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div id="content">
+
+    <!-- LOG PAGE -->
+    <div class="page active" id="page-log">
+
+      <!-- Session card -->
+      <div class="card">
+        <div class="card-title">Today's session</div>
+
+        <!-- No session -->
+        <div id="no-session-msg">
+          <p>Start a new session to begin logging doors.</p>
+          <div class="row2 mb12">
+            <div>
+              <label class="field-label" for="inp-postcode">Postcode</label>
+              <input type="text" id="inp-postcode" placeholder="e.g. SW1A 2AA" autocomplete="off" autocorrect="off" spellcheck="false" style="text-transform:uppercase">
+            </div>
+            <div>
+              <label class="field-label" for="inp-area">Area name</label>
+              <input type="text" id="inp-area" placeholder="e.g. Battersea" autocomplete="off">
+            </div>
+          </div>
+          <button class="btn-primary" onclick="startSession()">Start session</button>
+        </div>
+
+        <!-- Active session -->
+        <div id="active-session-info">
+          <div id="asi-postcode"></div>
+          <div id="asi-date"></div>
+          <div class="divider"></div>
+          <button class="btn-secondary btn-danger" onclick="confirmEndSession()">End session</button>
+        </div>
+      </div>
+
+      <!-- Door entry form (hidden until session active) -->
+      <div class="card" id="door-form" style="display:none">
+        <div class="card-title">Log a door</div>
+        <div class="row2 mb12">
+          <div>
+            <label class="field-label" for="inp-house">House no. / name</label>
+            <input type="text" id="inp-house" placeholder="e.g. 42" autocomplete="off" autocorrect="off">
+          </div>
+          <div>
+            <label class="field-label" for="inp-result">Result</label>
+            <select id="inp-result" onchange="onResultChange()">
+              <option value="no-answer">No answer</option>
+              <option value="spoke">Spoke to them</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Outcome toggles — shown when spoke -->
+        <div id="toggle-section">
+          <div class="card-title">Outcomes — tap to toggle</div>
+          <div class="toggle-grid">
+            <div class="tog-btn" id="tog-speed" onclick="cycleToggle('speed')" role="button" aria-label="Speed test">
+              <span>⚡ Speed test</span><div class="tog-state" id="ts-speed">—</div>
+            </div>
+            <div class="tog-btn" id="tog-pres" onclick="cycleToggle('pres')" role="button" aria-label="Presentation">
+              <span>📊 Presentation</span><div class="tog-state" id="ts-pres">—</div>
+            </div>
+            <div class="tog-btn" id="tog-close" onclick="cycleToggle('close')" role="button" aria-label="Close attempt">
+              <span>🤝 Close</span><div class="tog-state" id="ts-close">—</div>
+            </div>
+            <div class="tog-btn" id="tog-sale" onclick="cycleToggle('sale')" role="button" aria-label="Sale">
+              <span>⭐ Sale</span><div class="tog-state" id="ts-sale">—</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt12">
+          <label class="field-label" for="inp-notes">Notes (optional)</label>
+          <input type="text" id="inp-notes" placeholder="Callback time, name, objection..." autocomplete="off">
+        </div>
+
+        <div class="mt12">
+          <button class="btn-primary" onclick="addDoor()">+ Add door</button>
+        </div>
+      </div>
+
+      <!-- Recent doors in this session -->
+      <div id="recent-doors-card" style="display:none">
+        <div class="card-title" style="padding: 0 4px 8px;">Recent doors this session</div>
+        <div id="recent-doors-list"></div>
+      </div>
+
+    </div><!-- /page-log -->
+
+    <!-- HISTORY PAGE -->
+    <div class="page" id="page-history">
+      <div id="history-list"></div>
+    </div>
+
+    <!-- STATS PAGE -->
+    <div class="page" id="page-stats">
+      <div id="stats-content"></div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- NAV -->
+  <div id="nav">
+    <button class="nav-btn active" onclick="showPage('log',this)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17h7M17.5 14v7"/></svg>
+      Log
+    </button>
+    <button class="nav-btn" onclick="showPage('history',this)">
+      <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"/><polyline points="12 8 12 12 14 14"/></svg>
+      History
+    </button>
+    <button class="nav-btn" onclick="showPage('stats',this)">
+      <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Stats
+    </button>
+  </div>
+
+</div><!-- /app -->
+
+<div id="toast"></div>
+
+<script>
+// ============================================================
+// DATA LAYER — localStorage with structured schema
+// ============================================================
+const STORAGE_KEY = 'knocktrack_v1';
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) { console.error('Load error', e); }
+  return { sessions: [], activeSessionId: null, currentDayId: null };
+}
+
+function saveData(data) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch(e) { console.error('Save error', e); }
+}
+
+let DB = loadData();
+
+function getActiveSession() {
+  return DB.sessions.find(s => s.id === DB.activeSessionId) || null;
+}
+
+// ============================================================
+// STATE
+// ============================================================
+let toggleState = { speed: null, pres: null, close: null, sale: null };
+
+// ============================================================
+// SESSION MANAGEMENT
+// ============================================================
+function startSession() {
+  const pc = document.getElementById('inp-postcode').value.trim().toUpperCase();
+  const area = document.getElementById('inp-area').value.trim();
+  if (!pc) { shakeField('inp-postcode'); return; }
+
+  // Start a new day automatically if none exists
+  if (!DB.currentDayId) {
+    DB.currentDayId = Date.now().toString();
+  }
+
+  const now = new Date();
+  const session = {
+    id: 'sess_' + Date.now(),
+    dayId: DB.currentDayId,
+    postcode: pc,
+    area: area,
+    date: now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }),
+    dateISO: now.toISOString().split('T')[0],
+    entries: []
+  };
+
+  DB.sessions.push(session);
+  DB.activeSessionId = session.id;
+  saveData(DB);
+
+  document.getElementById('inp-postcode').value = '';
+  document.getElementById('inp-area').value = '';
+
+  renderSessionUI();
+  updateCounters();
+  showToast('Session started ✓');
+}
+
+function confirmEndSession() {
+  if (confirm('End this session? You can always view it in History.')) {
+    DB.activeSessionId = null;
+    saveData(DB);
+    renderSessionUI();
+    updateCounters();
+    showToast('Session saved');
+  }
+}
+
+function confirmNewDay() {
+  if (confirm('Start a new day? The counters will reset to zero. All your history is kept safe.')) {
+    DB.currentDayId = Date.now().toString();
+    DB.activeSessionId = null;
+    saveData(DB);
+    renderSessionUI();
+    updateCounters();
+    showToast('New day started — counters reset ✓');
+  }
+}
+
+function renderSessionUI() {
+  const sess = getActiveSession();
+  const noSess = document.getElementById('no-session-msg');
+  const activeSess = document.getElementById('active-session-info');
+  const doorForm = document.getElementById('door-form');
+  const badge = document.getElementById('session-badge');
+
+  if (sess) {
+    noSess.style.display = 'none';
+    activeSess.style.display = 'block';
+    doorForm.style.display = 'block';
+    badge.style.display = 'block';
+    document.getElementById('asi-postcode').textContent = sess.postcode + (sess.area ? ' — ' + sess.area : '');
+    document.getElementById('asi-date').textContent = sess.date;
+  } else {
+    noSess.style.display = 'block';
+    activeSess.style.display = 'none';
+    doorForm.style.display = 'none';
+    badge.style.display = 'none';
+  }
+  renderRecentDoors();
+}
+
+// ============================================================
+// DOOR ENTRY
+// ============================================================
+function onResultChange() {
+  const val = document.getElementById('inp-result').value;
+  const ts = document.getElementById('toggle-section');
+  ts.style.display = val === 'spoke' ? 'block' : 'none';
+  if (val !== 'spoke') resetToggles();
+}
+
+function cycleToggle(key) {
+  // null → true → false → null
+  if (toggleState[key] === null) toggleState[key] = true;
+  else if (toggleState[key] === true) toggleState[key] = false;
+  else toggleState[key] = null;
+  renderToggle(key);
+}
+
+function renderToggle(key) {
+  const btn = document.getElementById('tog-' + key);
+  const state = document.getElementById('ts-' + key);
+  btn.classList.remove('state-yes', 'state-no');
+  if (toggleState[key] === true) { btn.classList.add('state-yes'); state.textContent = 'Y'; }
+  else if (toggleState[key] === false) { btn.classList.add('state-no'); state.textContent = 'N'; }
+  else { state.textContent = '—'; }
+}
+
+function resetToggles() {
+  toggleState = { speed: null, pres: null, close: null, sale: null };
+  ['speed','pres','close','sale'].forEach(k => renderToggle(k));
+}
+
+function addDoor() {
+  const sess = getActiveSession();
+  if (!sess) return;
+  const house = document.getElementById('inp-house').value.trim();
+  if (!house) { shakeField('inp-house'); return; }
+
+  const result = document.getElementById('inp-result').value;
+  const notes = document.getElementById('inp-notes').value.trim();
+
+  const entry = {
+    id: 'e_' + Date.now(),
+    house,
+    result,
+    speed: result === 'spoke' ? toggleState.speed : null,
+    pres: result === 'spoke' ? toggleState.pres : null,
+    close: result === 'spoke' ? toggleState.close : null,
+    sale: result === 'spoke' ? toggleState.sale : null,
+    notes,
+    ts: Date.now()
+  };
+
+  sess.entries.push(entry);
+  saveData(DB);
+
+  // Reset form
+  document.getElementById('inp-house').value = '';
+  document.getElementById('inp-notes').value = '';
+  document.getElementById('inp-result').value = 'no-answer';
+  document.getElementById('toggle-section').style.display = 'none';
+  resetToggles();
+
+  updateCounters();
+  renderRecentDoors();
+  showToast(result === 'spoke' ? 'Door logged ✓' : 'No answer logged ✓');
+
+  // Keep focus on house number for rapid entry
+  document.getElementById('inp-house').focus();
+}
+
+function deleteEntry(sessionId, entryId) {
+  const sess = DB.sessions.find(s => s.id === sessionId);
+  if (!sess) return;
+  if (!confirm('Delete this entry?')) return;
+  sess.entries = sess.entries.filter(e => e.id !== entryId);
+  saveData(DB);
+  updateCounters();
+  renderRecentDoors();
+  renderHistory();
+  renderStats();
+}
+
+// ============================================================
+// COUNTERS
+// ============================================================
+function countSession(sess) {
+  const knocked = sess.entries.length;
+  const spoke = sess.entries.filter(e => e.result === 'spoke').length;
+  const speed = sess.entries.filter(e => e.speed === true).length;
+  const pres = sess.entries.filter(e => e.pres === true).length;
+  const close = sess.entries.filter(e => e.close === true).length;
+  const sale = sess.entries.filter(e => e.sale === true).length;
+  return { knocked, spoke, speed, pres, close, sale };
+}
+
+function getTodaySessions() {
+  if (!DB.currentDayId) return [];
+  return DB.sessions.filter(s => s.dayId === DB.currentDayId);
+}
+
+function updateCounters() {
+  const daySessions = getTodaySessions();
+  const c = { knocked:0, spoke:0, speed:0, pres:0, close:0, sale:0 };
+  daySessions.forEach(sess => {
+    const sc = countSession(sess);
+    Object.keys(c).forEach(k => c[k] += sc[k]);
+  });
+  document.getElementById('cn-knocked').textContent = c.knocked;
+  document.getElementById('cn-spoke').textContent = c.spoke;
+  document.getElementById('cn-speed').textContent = c.speed;
+  document.getElementById('cn-pres').textContent = c.pres;
+  document.getElementById('cn-close').textContent = c.close;
+  document.getElementById('cn-sale').textContent = c.sale;
+
+  // Update day label and new day button
+  const dayLabel = document.getElementById('day-label');
+  const newDayBtn = document.getElementById('new-day-btn');
+  if (DB.currentDayId && daySessions.length > 0) {
+    const d = new Date(parseInt(DB.currentDayId));
+    dayLabel.textContent = 'Today: ' + d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+    dayLabel.style.display = 'block';
+    newDayBtn.style.display = 'block';
+  } else {
+    dayLabel.style.display = 'none';
+    newDayBtn.style.display = 'none';
+  }
+}
+
+// ============================================================
+// RECENT DOORS (on Log page)
+// ============================================================
+function renderRecentDoors() {
+  const sess = getActiveSession();
+  const card = document.getElementById('recent-doors-card');
+  const list = document.getElementById('recent-doors-list');
+  if (!sess || sess.entries.length === 0) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+
+  const recent = [...sess.entries].reverse().slice(0, 10);
+  list.innerHTML = recent.map(e => entryRowHTML(sess.id, e)).join('');
+}
+
+function entryRowHTML(sessionId, e) {
+  const badges = e.result === 'spoke'
+    ? `<div class="entry-badges">
+        ${badge(e.speed, 'S')}
+        ${badge(e.pres, 'P')}
+        ${badge(e.close, 'C')}
+        ${badge(e.sale, '£')}
+       </div>`
+    : `<span style="font-size:12px;color:var(--muted)">No answer</span>`;
+
+  return `<div class="entry-row">
+    <div>
+      <div class="entry-house">${escHtml(e.house)}</div>
+      ${e.notes ? `<div class="entry-notes">${escHtml(e.notes)}</div>` : ''}
+    </div>
+    <div class="entry-status">${e.result === 'spoke' ? '💬 Spoke' : ''}</div>
+    ${badges}
+    <button class="entry-del" onclick="deleteEntry('${sessionId}','${e.id}')" aria-label="Delete">✕</button>
+  </div>`;
+}
+
+function badge(val, label) {
+  if (val === true) return `<div class="ebadge ebadge-y">${label}</div>`;
+  if (val === false) return `<div class="ebadge ebadge-n">${label}</div>`;
+  return `<div class="ebadge ebadge-na">${label}</div>`;
+}
+
+// ============================================================
+// HISTORY PAGE
+// ============================================================
+function renderHistory() {
+  const el = document.getElementById('history-list');
+  if (DB.sessions.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🚪</div><h3>No sessions yet</h3><p>Start a session on the Log tab to record your first day.</p></div>`;
+    return;
+  }
+
+  // Group sessions by dayId
+  const dayMap = {};
+  DB.sessions.forEach(s => {
+    const key = s.dayId || s.id;
+    if (!dayMap[key]) dayMap[key] = { dayId: key, sessions: [] };
+    dayMap[key].sessions.push(s);
+  });
+
+  // Sort days newest first
+  const days = Object.values(dayMap).sort((a,b) => b.dayId.localeCompare(a.dayId));
+
+  el.innerHTML = days.map(day => {
+    const isToday = day.dayId === DB.currentDayId;
+    const dayDate = day.sessions[0].date;
+    const dayTotals = { knocked:0, spoke:0, speed:0, pres:0, close:0, sale:0 };
+    day.sessions.forEach(s => {
+      const c = countSession(s);
+      Object.keys(dayTotals).forEach(k => dayTotals[k] += c[k]);
+    });
+
+    const sessionsHTML = day.sessions.map(sess => {
+      const c = countSession(sess);
+      const isActive = sess.id === DB.activeSessionId;
+      return `<div style="border-top:1px solid var(--border)">
+        <div style="padding:10px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleSessionCard('${sess.id}')">
+          <div>
+            <div style="font-size:15px;font-weight:700">${escHtml(sess.postcode)}${sess.area?' <span style="font-weight:400;color:var(--muted)">— '+escHtml(sess.area)+'</span>':''} ${isActive?'<span style="font-size:11px;background:var(--accent-dim);color:var(--accent);border-radius:99px;padding:2px 7px;font-weight:700">LIVE</span>':''}</div>
+            <div style="font-size:11px;color:var(--muted)">${c.knocked} doors · ${c.spoke} spoke · ${c.sale} sales</div>
+          </div>
+          <div class="sc-chevron" id="chev-${sess.id}">▾</div>
+        </div>
+        <div class="session-entries" id="entries-${sess.id}">
+          <div class="session-mini-counters">
+            <div class="smc-item"><div class="smc-num">${c.knocked}</div><div class="smc-lbl">Knocked</div></div>
+            <div class="smc-item"><div class="smc-num">${c.spoke}</div><div class="smc-lbl">Spoke</div></div>
+            <div class="smc-item"><div class="smc-num">${c.speed}</div><div class="smc-lbl">Speed</div></div>
+            <div class="smc-item"><div class="smc-num">${c.pres}</div><div class="smc-lbl">Presentation</div></div>
+            <div class="smc-item"><div class="smc-num">${c.close}</div><div class="smc-lbl">Close</div></div>
+            <div class="smc-item" style="background:var(--green-dim)"><div class="smc-num" style="color:var(--green)">${c.sale}</div><div class="smc-lbl">Sales</div></div>
+          </div>
+          ${sess.entries.length === 0
+            ? `<div style="padding:16px;text-align:center;color:var(--muted);font-size:14px">No doors logged yet</div>`
+            : [...sess.entries].reverse().map(e => entryRowHTML(sess.id, e)).join('')}
+        </div>
+      </div>`;
+    }).join('');
+
+    return `<div class="session-card">
+      <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:var(--radius) var(--radius) 0 0">
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">${isToday ? '📅 Today' : '📅 ' + dayDate}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px">${day.sessions.length} session${day.sessions.length>1?'s':''} · ${dayTotals.knocked} doors · ${dayTotals.spoke} spoke</div>
+        </div>
+        ${dayTotals.sale > 0 ? `<div class="sc-badge">${dayTotals.sale} sale${dayTotals.sale>1?'s':''}</div>` : ''}
+      </div>
+      ${sessionsHTML}
+    </div>`;
+  }).join('');
+}
+
+function toggleSessionCard(id) {
+  const entries = document.getElementById('entries-' + id);
+  const chev = document.getElementById('chev-' + id);
+  const open = entries.classList.toggle('open');
+  chev.classList.toggle('open', open);
+}
+
+// ============================================================
+// STATS PAGE
+// ============================================================
+function pct(a, b) {
+  if (!b) return '—';
+  return Math.round(a / b * 100) + '%';
+}
+
+function renderStats() {
+  const el = document.getElementById('stats-content');
+  if (DB.sessions.length === 0) {
+    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><h3>No data yet</h3><p>Log some doors to see your stats and conversion funnel.</p></div>`;
+    return;
+  }
+
+  // All-time totals
+  let totals = { knocked:0, spoke:0, speed:0, pres:0, close:0, sale:0 };
+  DB.sessions.forEach(s => {
+    const c = countSession(s);
+    Object.keys(totals).forEach(k => totals[k] += c[k]);
+  });
+
+  const maxKnocked = totals.knocked || 1;
+
+  el.innerHTML = `
+    <div class="card">
+      <div class="card-title">All-time totals</div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-num">${totals.knocked}</div><div class="stat-name">Knocked</div></div>
+        <div class="stat-card"><div class="stat-num">${totals.spoke}</div><div class="stat-name">Spoke</div></div>
+        <div class="stat-card"><div class="stat-num">${totals.speed}</div><div class="stat-name">Speed test</div></div>
+        <div class="stat-card"><div class="stat-num">${totals.pres}</div><div class="stat-name">Presentation</div></div>
+        <div class="stat-card"><div class="stat-num">${totals.close}</div><div class="stat-name">Close</div></div>
+        <div class="stat-card sale-card"><div class="stat-num">${totals.sale}</div><div class="stat-name">Sales</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Conversion funnel</div>
+      ${funnelRow('Doors knocked', totals.knocked, totals.knocked, maxKnocked, false)}
+      ${funnelRow('Spoke to resident', totals.spoke, totals.knocked, maxKnocked, false)}
+      ${funnelRow('Speed test delivered', totals.speed, totals.spoke, maxKnocked, false)}
+      ${funnelRow('Presentation delivered', totals.pres, totals.spoke, maxKnocked, false)}
+      ${funnelRow('Close attempted', totals.close, totals.pres, maxKnocked, false)}
+      ${funnelRow('Sale made', totals.sale, totals.close, maxKnocked, true)}
+    </div>
+
+    <div class="card">
+      <div class="card-title">Per day breakdown</div>
+      <div style="overflow-x:auto">
+        <table class="day-table">
+          <thead>
+            <tr>
+              <th>Day / Postcode</th>
+              <th style="text-align:center">🚪</th>
+              <th style="text-align:center">💬</th>
+              <th style="text-align:center">⚡</th>
+              <th style="text-align:center">📊</th>
+              <th style="text-align:center">🤝</th>
+              <th style="text-align:center">⭐</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${(() => {
+              const dayMap = {};
+              DB.sessions.forEach(s => {
+                const key = s.dayId || s.id;
+                if (!dayMap[key]) dayMap[key] = { dayId: key, date: s.date, sessions: [] };
+                dayMap[key].sessions.push(s);
+              });
+              const days = Object.values(dayMap).sort((a,b) => b.dayId.localeCompare(a.dayId));
+              return days.map(day => {
+                const dayTotals = { knocked:0, spoke:0, speed:0, pres:0, close:0, sale:0 };
+                day.sessions.forEach(s => { const c=countSession(s); Object.keys(dayTotals).forEach(k=>dayTotals[k]+=c[k]); });
+                const isToday = day.dayId === DB.currentDayId;
+                const sessRows = day.sessions.map(s => {
+                  const c = countSession(s);
+                  return `<tr>
+                    <td style="padding-left:20px"><div style="font-size:12px;font-weight:600">${escHtml(s.postcode)}${s.area?' · '+escHtml(s.area):''}</div></td>
+                    <td style="text-align:center;font-size:12px">${c.knocked}</td>
+                    <td style="text-align:center;font-size:12px">${c.spoke||'<span class="zero">0</span>'}</td>
+                    <td style="text-align:center;font-size:12px">${c.speed||'<span class="zero">0</span>'}</td>
+                    <td style="text-align:center;font-size:12px">${c.pres||'<span class="zero">0</span>'}</td>
+                    <td style="text-align:center;font-size:12px">${c.close||'<span class="zero">0</span>'}</td>
+                    <td style="text-align:center;font-size:12px;font-weight:700;color:${c.sale?'var(--green)':'var(--surface2)'}">${c.sale}</td>
+                  </tr>`;
+                }).join('');
+                return `<tr style="background:var(--surface2)">
+                  <td><div style="font-weight:700;font-size:13px">${isToday?'Today':day.date.split(',').slice(0,2).join(',')}</div><div style="font-size:10px;color:var(--muted)">${day.sessions.length} session${day.sessions.length>1?'s':''}</div></td>
+                  <td style="text-align:center;font-weight:700">${dayTotals.knocked}</td>
+                  <td style="text-align:center;font-weight:700">${dayTotals.spoke||'<span class="zero">0</span>'}</td>
+                  <td style="text-align:center;font-weight:700">${dayTotals.speed||'<span class="zero">0</span>'}</td>
+                  <td style="text-align:center;font-weight:700">${dayTotals.pres||'<span class="zero">0</span>'}</td>
+                  <td style="text-align:center;font-weight:700">${dayTotals.close||'<span class="zero">0</span>'}</td>
+                  <td style="text-align:center;font-weight:700;color:${dayTotals.sale?'var(--green)':'var(--surface2)'}">${dayTotals.sale}</td>
+                </tr>${sessRows}`;
+              }).join('');
+            })()}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  `;
+}
+
+function funnelRow(label, count, denom, max, isGreen) {
+  const width = max ? Math.round(count / max * 100) : 0;
+  const p = pct(count, denom);
+  return `<div class="funnel-row">
+    <div class="funnel-label">${label}</div>
+    <div class="funnel-count">${count}</div>
+    <div class="funnel-pct">${p !== '—' ? p : ''}</div>
+    <div class="funnel-bar-wrap"><div class="funnel-bar${isGreen?' green':''}" style="width:${width}%"></div></div>
+  </div>`;
+}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function showPage(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+
+  if (name === 'history') renderHistory();
+  if (name === 'stats') renderStats();
+
+  document.getElementById('content').scrollTop = 0;
+}
+
+// ============================================================
+// UTILITIES
+// ============================================================
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+function shakeField(id) {
+  const el = document.getElementById(id);
+  el.style.borderColor = 'var(--red)';
+  el.style.boxShadow = '0 0 0 3px rgba(248,113,113,0.2)';
+  el.focus();
+  setTimeout(() => { el.style.borderColor = ''; el.style.boxShadow = ''; }, 1500);
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ============================================================
+// INIT
+// ============================================================
+renderSessionUI();
+updateCounters();
+</script>
+</body>
+</html>
