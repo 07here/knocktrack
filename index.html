@@ -488,6 +488,12 @@
           <div id="asi-postcode"></div>
           <div id="asi-date"></div>
           <div class="divider"></div>
+
+          <!-- Lap tracker -->
+          <div class="card-title" style="margin-bottom:8px">Lap tracker</div>
+          <div id="lap-tracker-ui"></div>
+
+          <div class="divider"></div>
           <button class="btn-secondary btn-danger" onclick="confirmEndSession()">End session</button>
         </div>
       </div>
@@ -531,6 +537,12 @@
         <div class="mt12">
           <label class="field-label" for="inp-notes">Notes (optional)</label>
           <input type="text" id="inp-notes" placeholder="Callback time, name, objection..." autocomplete="off">
+        </div>
+
+        <div class="mt12">
+          <div class="tog-btn" id="tog-comeback" onclick="toggleComeback()" role="button" aria-label="Come back">
+            <span>🔁 Come back</span><div class="tog-state" id="ts-comeback">—</div>
+          </div>
         </div>
 
         <div class="mt12">
@@ -608,6 +620,68 @@ function getActiveSession() {
 // STATE
 // ============================================================
 let toggleState = { speed: null, pres: null, close: null, sale: null };
+let comeBackState = false;
+
+function toggleComeback() {
+  comeBackState = !comeBackState;
+  const btn = document.getElementById('tog-comeback');
+  const state = document.getElementById('ts-comeback');
+  if (comeBackState) {
+    btn.classList.add('state-yes');
+    state.textContent = 'Y';
+  } else {
+    btn.classList.remove('state-yes');
+    state.textContent = '—';
+  }
+}
+
+function resetComeback() {
+  comeBackState = false;
+  const btn = document.getElementById('tog-comeback');
+  const state = document.getElementById('ts-comeback');
+  if (btn) { btn.classList.remove('state-yes'); state.textContent = '—'; }
+}
+
+// ============================================================
+// LAP TRACKER
+// ============================================================
+function startLap() {
+  const sess = getActiveSession();
+  if (!sess) return;
+  if (!sess.laps) sess.laps = [];
+  const lapNum = sess.laps.length + 1;
+  sess.laps.push({ lap: lapNum, startTs: Date.now() });
+  saveData(DB);
+  renderLapTracker();
+  showToast('Lap ' + lapNum + ' started ✓');
+}
+
+function renderLapTracker() {
+  const el = document.getElementById('lap-tracker-ui');
+  if (!el) return;
+  const sess = getActiveSession();
+  if (!sess) { el.innerHTML = ''; return; }
+  const laps = sess.laps || [];
+  const currentLap = laps.length;
+  const canStart = currentLap < 3;
+
+  const lapRows = laps.map(l => {
+    const t = new Date(l.startTs);
+    const timeStr = t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
+      <div style="font-size:14px;font-weight:700;color:var(--accent)">Lap ${l.lap}</div>
+      <div style="font-size:13px;color:var(--muted)">Started ${timeStr}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="margin-bottom:8px">${lapRows || '<div style="font-size:13px;color:var(--muted);margin-bottom:8px">No laps started yet</div>'}</div>
+    ${canStart
+      ? `<button class="btn-primary" onclick="startLap()" style="font-size:14px;padding:10px">▶ Start lap ${currentLap + 1}</button>`
+      : `<div style="text-align:center;font-size:13px;color:var(--green);font-weight:600;padding:6px 0">✓ All 3 laps completed</div>`
+    }
+  `;
+}
 
 // ============================================================
 // SESSION MANAGEMENT
@@ -680,6 +754,7 @@ function renderSessionUI() {
     badge.style.display = 'block';
     document.getElementById('asi-postcode').textContent = sess.postcode + (sess.area ? ' — ' + sess.area : '');
     document.getElementById('asi-date').textContent = sess.date;
+    renderLapTracker();
   } else {
     noSess.style.display = 'block';
     activeSess.style.display = 'none';
@@ -719,6 +794,7 @@ function renderToggle(key) {
 function resetToggles() {
   toggleState = { speed: null, pres: null, close: null, sale: null };
   ['speed','pres','close','sale'].forEach(k => renderToggle(k));
+  resetComeback();
 }
 
 function addDoor() {
@@ -738,6 +814,7 @@ function addDoor() {
     pres: result === 'spoke' ? toggleState.pres : null,
     close: result === 'spoke' ? toggleState.close : null,
     sale: result === 'spoke' ? toggleState.sale : null,
+    comeBack: comeBackState,
     notes,
     ts: Date.now()
   };
@@ -754,7 +831,7 @@ function addDoor() {
 
   updateCounters();
   renderRecentDoors();
-  showToast(result === 'spoke' ? 'Door logged ✓' : 'No answer logged ✓');
+  showToast(result === 'spoke' ? 'Door logged ✓' : comeBackState ? 'No answer — come back logged ✓' : 'No answer logged ✓');
 
   // Keep focus on house number for rapid entry
   document.getElementById('inp-house').focus();
@@ -842,13 +919,19 @@ function entryRowHTML(sessionId, e) {
        </div>`
     : `<span style="font-size:12px;color:var(--muted)">No answer</span>`;
 
+  const cbBadge = e.comeBack
+    ? `<div class="ebadge" style="background:rgba(251,191,36,0.15);color:var(--amber);width:auto;padding:0 6px;font-size:10px">🔁</div>`
+    : '';
+
   return `<div class="entry-row">
-    <div>
+    <div style="flex:1;min-width:0">
       <div class="entry-house">${escHtml(e.house)}</div>
       ${e.notes ? `<div class="entry-notes">${escHtml(e.notes)}</div>` : ''}
     </div>
-    <div class="entry-status">${e.result === 'spoke' ? '💬 Spoke' : ''}</div>
-    ${badges}
+    <div style="display:flex;align-items:center;gap:4px">
+      ${cbBadge}
+      ${badges}
+    </div>
     <button class="entry-del" onclick="deleteEntry('${sessionId}','${e.id}')" aria-label="Delete">✕</button>
   </div>`;
 }
@@ -896,11 +979,14 @@ function renderHistory() {
         <div style="padding:10px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleSessionCard('${sess.id}')">
           <div>
             <div style="font-size:15px;font-weight:700">${escHtml(sess.postcode)}${sess.area?' <span style="font-weight:400;color:var(--muted)">— '+escHtml(sess.area)+'</span>':''} ${isActive?'<span style="font-size:11px;background:var(--accent-dim);color:var(--accent);border-radius:99px;padding:2px 7px;font-weight:700">LIVE</span>':''}</div>
-            <div style="font-size:11px;color:var(--muted)">${c.knocked} doors · ${c.spoke} spoke · ${c.sale} sales</div>
+            <div style="font-size:11px;color:var(--muted)">${c.knocked} doors · ${c.spoke} spoke · ${c.sale} sales${sess.laps && sess.laps.length ? ' · ' + sess.laps.length + ' lap' + (sess.laps.length > 1 ? 's' : '') : ''}</div>
           </div>
           <div class="sc-chevron" id="chev-${sess.id}">▾</div>
         </div>
         <div class="session-entries" id="entries-${sess.id}">
+          ${sess.laps && sess.laps.length ? `<div style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;gap:12px;flex-wrap:wrap">
+            ${sess.laps.map(l => `<span style="font-size:12px;color:var(--accent);font-weight:600">Lap ${l.lap}: ${new Date(l.startTs).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span>`).join('')}
+          </div>` : ''}
           <div class="session-mini-counters">
             <div class="smc-item"><div class="smc-num">${c.knocked}</div><div class="smc-lbl">Knocked</div></div>
             <div class="smc-item"><div class="smc-num">${c.spoke}</div><div class="smc-lbl">Spoke</div></div>
