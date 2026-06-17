@@ -6,1180 +6,1033 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="KnockTrack">
-<meta name="theme-color" content="#0f172a">
+<meta name="theme-color" content="#0a0a0a">
 <title>KnockTrack</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
-  :root {
-    --bg: #0f172a;
-    --surface: #1e293b;
-    --surface2: #263347;
-    --border: rgba(255,255,255,0.08);
-    --border2: rgba(255,255,255,0.14);
-    --text: #f1f5f9;
-    --muted: #94a3b8;
-    --accent: #38bdf8;
-    --accent-dim: rgba(56,189,248,0.12);
-    --green: #4ade80;
-    --green-dim: rgba(74,222,128,0.12);
-    --red: #f87171;
-    --red-dim: rgba(248,113,113,0.12);
-    --amber: #fbbf24;
-    --amber-dim: rgba(251,191,36,0.12);
-    --radius: 14px;
-    --radius-sm: 8px;
-    --safe-top: env(safe-area-inset-top, 0px);
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-  }
+:root {
+  --bg:       #0a0a0a;
+  --surface:  #141414;
+  --surface2: #1e1e1e;
+  --surface3: #252525;
+  --border:   rgba(255,255,255,0.07);
+  --border2:  rgba(255,255,255,0.12);
+  --text:     #f0f0f0;
+  --muted:    #777;
+  --muted2:   #555;
+  --green:    #00e676;
+  --green2:   #00c853;
+  --green-dim:rgba(0,230,118,0.10);
+  --green-border:rgba(0,230,118,0.25);
+  --red:      #ff5252;
+  --red-dim:  rgba(255,82,82,0.10);
+  --amber:    #ffc400;
+  --amber-dim:rgba(255,196,0,0.10);
+  --amber-border:rgba(255,196,0,0.3);
+  --blue:     #448aff;
+  --radius:   16px;
+  --radius-sm:10px;
+  --safe-top: env(safe-area-inset-top,0px);
+  --safe-bot: env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;font-size:16px;line-height:1.5;overscroll-behavior:none;}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+/* App shell */
+#app{display:flex;flex-direction:column;height:100%;max-width:480px;margin:0 auto;}
 
-  html, body {
-    height: 100%;
-    background: var(--bg);
-    color: var(--text);
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', sans-serif;
-    font-size: 16px;
-    line-height: 1.5;
-    overscroll-behavior: none;
-  }
+/* Header */
+#header{
+  padding:calc(var(--safe-top) + 12px) 16px 10px;
+  background:var(--bg);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;
+  position:sticky;top:0;z-index:50;
+}
+#header-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+#app-name{font-size:21px;font-weight:800;letter-spacing:-0.5px;}
+#app-name span{color:var(--green);}
+#header-right{display:flex;align-items:center;gap:8px;}
+#live-badge{font-size:11px;font-weight:700;background:var(--green-dim);color:var(--green);border:1px solid var(--green-border);border-radius:99px;padding:3px 10px;display:none;}
+#new-day-btn{display:none;background:var(--red-dim);border:1px solid rgba(255,82,82,0.3);color:var(--red);border-radius:99px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
 
-  /* ---- App shell ---- */
-  #app {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    max-width: 480px;
-    margin: 0 auto;
-  }
+/* Counter bar */
+#counter-bar{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
+#counter-bar::-webkit-scrollbar{display:none;}
+.cpill{
+  flex-shrink:0;display:flex;flex-direction:column;align-items:center;
+  background:var(--surface);border:1px solid var(--border2);border-radius:10px;
+  padding:6px 10px;min-width:60px;
+}
+.cpill.sale{background:var(--green-dim);border-color:var(--green-border);}
+.cpill-num{font-size:20px;font-weight:800;color:var(--text);line-height:1;}
+.cpill.sale .cpill-num{color:var(--green);}
+.cpill-lbl{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:3px;white-space:nowrap;}
 
-  /* ---- Header ---- */
-  #header {
-    padding: calc(var(--safe-top) + 14px) 20px 12px;
-    background: var(--bg);
-    border-bottom: 1px solid var(--border);
-    flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    z-index: 10;
-  }
-  #header-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
-  #app-name { font-size: 20px; font-weight: 700; letter-spacing: -0.3px; color: var(--text); }
-  #app-name span { color: var(--accent); }
-  #session-badge {
-    font-size: 12px;
-    font-weight: 600;
-    background: var(--accent-dim);
-    color: var(--accent);
-    border: 1px solid rgba(56,189,248,0.25);
-    border-radius: 99px;
-    padding: 3px 10px;
-    display: none;
-  }
+/* Nav */
+#nav{display:flex;background:var(--surface);border-top:1px solid var(--border);padding-bottom:var(--safe-bot);flex-shrink:0;}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px 8px;background:none;border:none;color:var(--muted);font-size:10px;font-weight:700;cursor:pointer;gap:3px;text-transform:uppercase;letter-spacing:0.04em;transition:color 0.15s;font-family:inherit;}
+.nav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+.nav-btn.active{color:var(--green);}
 
-  /* Running counters bar */
-  #counter-bar {
-    display: flex;
-    gap: 6px;
-    overflow-x: auto;
-    scrollbar-width: none;
-    padding-bottom: 2px;
-  }
-  #counter-bar::-webkit-scrollbar { display: none; }
-  .counter-pill {
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 6px 10px;
-    min-width: 58px;
-  }
-  .counter-pill.highlight { background: var(--green-dim); border-color: rgba(74,222,128,0.25); }
-  .counter-num {
-    font-size: 20px;
-    font-weight: 700;
-    color: var(--text);
-    line-height: 1;
-  }
-  .counter-pill.highlight .counter-num { color: var(--green); }
-  .counter-lbl {
-    font-size: 9px;
-    font-weight: 600;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    margin-top: 3px;
-    white-space: nowrap;
-  }
+/* Content */
+#content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
+.page{display:none;padding:14px;}
+.page.active{display:block;}
 
-  /* ---- Nav ---- */
-  #nav {
-    display: flex;
-    background: var(--bg);
-    border-top: 1px solid var(--border);
-    padding-bottom: var(--safe-bottom);
-    flex-shrink: 0;
-  }
-  .nav-btn {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 10px 4px 8px;
-    background: none;
-    border: none;
-    color: var(--muted);
-    font-size: 10px;
-    font-weight: 600;
-    cursor: pointer;
-    gap: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-    transition: color 0.15s;
-  }
-  .nav-btn svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
-  .nav-btn.active { color: var(--accent); }
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;}
+.card-title{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;}
 
-  /* ---- Scroll area ---- */
-  #content {
-    flex: 1;
-    overflow-y: auto;
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-  }
+/* Form */
+label.fl{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em;}
+input[type=text],select{
+  width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);
+  color:var(--text);font-size:16px;padding:11px 13px;outline:none;
+  -webkit-appearance:none;appearance:none;font-family:inherit;
+}
+input[type=text]:focus,select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,230,118,0.12);}
+input::placeholder{color:var(--muted2);}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23777' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:36px;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.mb10{margin-bottom:10px;}
+.mt10{margin-top:10px;}
+.mt12{margin-top:12px;}
+.divider{height:1px;background:var(--border);margin:12px 0;}
 
-  /* ---- Pages ---- */
-  .page { display: none; padding: 16px; }
-  .page.active { display: block; }
+/* Buttons */
+.btn{width:100%;border:none;border-radius:var(--radius-sm);padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.15s,transform 0.1s;}
+.btn:active{opacity:0.8;transform:scale(0.98);}
+.btn-green{background:var(--green);color:#000;}
+.btn-outline{background:transparent;border:1px solid var(--border2);color:var(--muted);}
+.btn-outline:hover{border-color:var(--red);color:var(--red);}
+.btn-sm{padding:8px 14px;font-size:13px;width:auto;border-radius:8px;}
 
-  /* ---- Cards ---- */
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 16px;
-    margin-bottom: 12px;
-  }
-  .card-title {
-    font-size: 11px;
-    font-weight: 700;
-    color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 12px;
-  }
+/* Toggle buttons */
+.tog{
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);
+  padding:11px 13px;cursor:pointer;color:var(--text);font-size:14px;font-weight:600;
+  transition:all 0.15s;user-select:none;
+}
+.tog .tog-val{width:26px;height:18px;border-radius:99px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;background:var(--surface3);color:var(--muted);border:1px solid var(--border2);}
+.tog.yes{background:var(--green-dim);border-color:var(--green-border);}
+.tog.yes .tog-val{background:var(--green);color:#000;border-color:transparent;}
+.tog.no{background:var(--red-dim);border-color:rgba(255,82,82,0.3);}
+.tog.no .tog-val{background:var(--red);color:#fff;border-color:transparent;}
+.tog.amb{background:var(--amber-dim);border-color:var(--amber-border);}
+.tog.amb .tog-val{background:var(--amber);color:#000;border-color:transparent;}
+.tog-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 
-  /* ---- Session panel ---- */
-  #no-session-msg { text-align: center; padding: 8px 0 4px; }
-  #no-session-msg p { color: var(--muted); font-size: 14px; margin-bottom: 12px; }
+/* Toast */
+#toast{position:fixed;bottom:calc(62px + var(--safe-bot) + 10px);left:50%;transform:translateX(-50%) translateY(16px);background:var(--green);color:#000;font-size:14px;font-weight:800;padding:10px 20px;border-radius:99px;opacity:0;transition:all 0.2s;pointer-events:none;white-space:nowrap;z-index:200;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-  #active-session-info { display: none; margin-bottom: 12px; }
-  #asi-postcode { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
-  #asi-date { font-size: 13px; color: var(--muted); }
+/* ── SESSION UI ── */
+#no-sess-wrap p{color:var(--muted);font-size:14px;margin-bottom:12px;}
+#active-sess-wrap{display:none;}
+#asi-pc{font-size:20px;font-weight:800;color:var(--text);}
+#asi-date{font-size:12px;color:var(--muted);margin-top:2px;}
 
-  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+/* Lap tracker */
+.lap-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);}
+.lap-row:last-of-type{border-bottom:none;}
+.lap-num{font-size:13px;font-weight:800;color:var(--green);}
+.lap-time{font-size:12px;color:var(--muted);}
 
-  /* ---- Form fields ---- */
-  label.field-label {
-    display: block;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--muted);
-    margin-bottom: 6px;
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-  input[type="text"], select {
-    width: 100%;
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    border-radius: var(--radius-sm);
-    color: var(--text);
-    font-size: 16px;
-    padding: 11px 13px;
-    outline: none;
-    appearance: none;
-    -webkit-appearance: none;
-    font-family: inherit;
-  }
-  input[type="text"]:focus, select:focus {
-    border-color: var(--accent);
-    box-shadow: 0 0 0 3px rgba(56,189,248,0.15);
-  }
-  input::placeholder { color: var(--muted); opacity: 0.6; }
-  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 13px center; padding-right: 36px; }
+/* ── ADDRESS LIST ── */
+#postcode-section{display:none;}
+#map{height:180px;border-radius:var(--radius-sm);overflow:hidden;margin-bottom:12px;border:1px solid var(--border);}
+.filter-tabs{display:flex;gap:6px;margin-bottom:10px;}
+.ftab{flex:1;text-align:center;padding:7px 4px;border-radius:8px;border:1px solid var(--border2);font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);background:var(--surface2);transition:all 0.15s;}
+.ftab.active{background:var(--green-dim);border-color:var(--green-border);color:var(--green);}
 
-  /* ---- Toggle buttons ---- */
-  #toggle-section { display: none; margin-top: 14px; }
-  #toggle-section .card-title { margin-bottom: 10px; }
-  .toggle-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .tog-btn {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--surface2);
-    border: 1px solid var(--border2);
-    border-radius: var(--radius-sm);
-    padding: 12px 13px;
-    cursor: pointer;
-    color: var(--text);
-    font-size: 14px;
-    font-weight: 600;
-    transition: all 0.15s;
-    user-select: none;
-  }
-  .tog-btn .tog-icon { font-size: 18px; }
-  .tog-btn .tog-state {
-    width: 28px; height: 18px;
-    border-radius: 99px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 11px;
-    font-weight: 700;
-    background: var(--surface);
-    color: var(--muted);
-    border: 1px solid var(--border2);
-  }
-  .tog-btn.state-yes { background: var(--green-dim); border-color: rgba(74,222,128,0.3); }
-  .tog-btn.state-yes .tog-state { background: var(--green); color: #0f172a; border-color: transparent; }
-  .tog-btn.state-no { background: var(--red-dim); border-color: rgba(248,113,113,0.3); }
-  .tog-btn.state-no .tog-state { background: var(--red); color: #0f172a; border-color: transparent; }
+/* Address rows */
+.addr-row{
+  display:flex;align-items:center;gap:8px;
+  padding:10px 12px;border-radius:var(--radius-sm);
+  background:var(--surface2);border:1px solid var(--border);
+  margin-bottom:6px;transition:all 0.2s;
+}
+.addr-row.knocked{opacity:0.35;background:var(--surface);}
+.addr-row.comeback{background:var(--amber-dim);border-color:var(--amber-border);}
+.addr-name{flex:1;font-size:14px;font-weight:600;color:var(--text);}
+.addr-row.comeback .addr-name{color:var(--amber);}
+.addr-sub{font-size:11px;color:var(--muted);margin-top:1px;}
+.addr-actions{display:flex;gap:5px;flex-shrink:0;}
+.addr-btn{
+  border:none;border-radius:7px;padding:7px 9px;font-size:11px;font-weight:800;
+  cursor:pointer;font-family:inherit;white-space:nowrap;transition:all 0.15s;
+}
+.addr-btn:active{transform:scale(0.93);}
+.addr-btn.spoke{background:var(--green-dim);color:var(--green);border:1px solid var(--green-border);}
+.addr-btn.noanswer{background:var(--surface3);color:var(--muted);border:1px solid var(--border2);}
+.addr-btn.comeback{background:var(--amber-dim);color:var(--amber);border:1px solid var(--amber-border);}
+.addr-btn.active-state{filter:brightness(1.4);}
 
-  /* ---- Primary button ---- */
-  .btn-primary {
-    width: 100%;
-    background: var(--accent);
-    color: #0f172a;
-    border: none;
-    border-radius: var(--radius-sm);
-    padding: 14px;
-    font-size: 16px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: opacity 0.15s, transform 0.1s;
-    font-family: inherit;
-  }
-  .btn-primary:active { opacity: 0.85; transform: scale(0.98); }
-  .btn-secondary {
-    width: 100%;
-    background: transparent;
-    color: var(--muted);
-    border: 1px solid var(--border2);
-    border-radius: var(--radius-sm);
-    padding: 12px;
-    font-size: 14px;
-    font-weight: 600;
-    cursor: pointer;
-    transition: all 0.15s;
-    font-family: inherit;
-  }
-  .btn-secondary:hover { border-color: var(--red); color: var(--red); }
-  .btn-danger { color: var(--red); border-color: rgba(248,113,113,0.3); }
-  .btn-danger:hover { background: var(--red-dim); }
+/* Spoke modal */
+#spoke-modal{display:none;position:fixed;inset:0;z-index:150;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);align-items:flex-end;}
+#spoke-modal.open{display:flex;}
+#spoke-modal-inner{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius) var(--radius) 0 0;padding:20px 16px calc(20px + var(--safe-bot));width:100%;max-width:480px;margin:0 auto;}
+#spoke-modal-title{font-size:16px;font-weight:800;margin-bottom:4px;}
+#spoke-modal-addr{font-size:13px;color:var(--muted);margin-bottom:14px;}
 
-  /* ---- Toast ---- */
-  #toast {
-    position: fixed;
-    bottom: calc(60px + var(--safe-bottom) + 12px);
-    left: 50%;
-    transform: translateX(-50%) translateY(20px);
-    background: var(--green);
-    color: #0f172a;
-    font-size: 14px;
-    font-weight: 700;
-    padding: 10px 20px;
-    border-radius: 99px;
-    opacity: 0;
-    transition: all 0.25s;
-    pointer-events: none;
-    white-space: nowrap;
-    z-index: 100;
-  }
-  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* ── HISTORY ── */
+.day-block{margin-bottom:14px;}
+.day-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;cursor:pointer;}
+.day-label{font-size:14px;font-weight:800;}
+.day-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.day-sale-badge{font-size:12px;font-weight:800;color:var(--green);background:var(--green-dim);border:1px solid var(--green-border);border-radius:99px;padding:2px 10px;}
+.day-body{display:none;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow:hidden;}
+.day-body.open{display:block;}
 
-  /* ---- History ---- */
-  .session-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    margin-bottom: 12px;
-    overflow: hidden;
-  }
-  .session-card-header {
-    padding: 14px 16px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    cursor: pointer;
-    user-select: none;
-  }
-  .session-card-header:active { background: var(--surface2); }
-  .sc-postcode { font-size: 17px; font-weight: 700; }
-  .sc-date { font-size: 12px; color: var(--muted); margin-top: 1px; }
-  .sc-summary { display: flex; gap: 10px; align-items: center; }
-  .sc-badge { font-size: 12px; font-weight: 700; color: var(--green); background: var(--green-dim); border-radius: 99px; padding: 2px 9px; }
-  .sc-chevron { color: var(--muted); font-size: 18px; transition: transform 0.2s; }
-  .sc-chevron.open { transform: rotate(180deg); }
+.sess-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);cursor:pointer;}
+.sess-pc{font-size:15px;font-weight:700;}
+.sess-meta{font-size:11px;color:var(--muted);margin-top:1px;}
+.sess-chev{color:var(--muted);font-size:16px;transition:transform 0.2s;}
+.sess-chev.open{transform:rotate(180deg);}
+.sess-body{display:none;}
+.sess-body.open{display:block;}
 
-  .session-entries { display: none; border-top: 1px solid var(--border); }
-  .session-entries.open { display: block; }
+.mini-counters{display:flex;border-bottom:1px solid var(--border);}
+.mc-item{flex:1;text-align:center;padding:8px 4px;border-right:1px solid var(--border);}
+.mc-item:last-child{border-right:none;}
+.mc-item.sale{background:var(--green-dim);}
+.mc-num{font-size:17px;font-weight:800;color:var(--text);}
+.mc-item.sale .mc-num{color:var(--green);}
+.mc-lbl{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;}
+.mc-item.comeback-mc{background:var(--amber-dim);}
+.mc-item.comeback-mc .mc-num{color:var(--amber);}
 
-  /* Mini counters inside session */
-  .session-mini-counters {
-    display: flex;
-    gap: 0;
-    border-bottom: 1px solid var(--border);
-  }
-  .smc-item {
-    flex: 1;
-    text-align: center;
-    padding: 10px 4px;
-    border-right: 1px solid var(--border);
-  }
-  .smc-item:last-child { border-right: none; }
-  .smc-num { font-size: 18px; font-weight: 700; color: var(--text); }
-  .smc-lbl { font-size: 9px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.03em; }
+.entry-row{display:flex;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);gap:8px;}
+.entry-row:last-child{border-bottom:none;}
+.entry-house{font-size:14px;font-weight:700;min-width:44px;}
+.entry-badges{display:flex;gap:4px;flex-wrap:wrap;}
+.ebadge{width:22px;height:22px;border-radius:5px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.eb-y{background:var(--green-dim);color:var(--green);}
+.eb-n{background:var(--red-dim);color:var(--red);}
+.eb-na{background:var(--surface3);color:var(--muted);}
+.eb-cb{background:var(--amber-dim);color:var(--amber);width:auto;padding:0 5px;font-size:9px;}
+.entry-del{background:none;border:none;color:var(--muted2);font-size:16px;cursor:pointer;padding:4px;border-radius:6px;line-height:1;}
+.entry-del:active{color:var(--red);background:var(--red-dim);}
+.entry-notes{font-size:11px;color:var(--amber);margin-top:2px;}
 
-  /* Entry rows */
-  .entry-row {
-    display: flex;
-    align-items: center;
-    padding: 10px 16px;
-    border-bottom: 1px solid var(--border);
-    gap: 10px;
-  }
-  .entry-row:last-child { border-bottom: none; }
-  .entry-house { font-size: 15px; font-weight: 700; min-width: 50px; }
-  .entry-status { font-size: 12px; color: var(--muted); flex: 1; }
-  .entry-badges { display: flex; gap: 4px; }
-  .ebadge {
-    width: 22px; height: 22px;
-    border-radius: 5px;
-    font-size: 10px;
-    font-weight: 700;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .ebadge-y { background: var(--green-dim); color: var(--green); }
-  .ebadge-n { background: var(--red-dim); color: var(--red); }
-  .ebadge-na { background: var(--surface2); color: var(--muted); }
-  .entry-del {
-    background: none;
-    border: none;
-    color: var(--muted);
-    font-size: 18px;
-    cursor: pointer;
-    padding: 4px;
-    line-height: 1;
-    border-radius: 6px;
-  }
-  .entry-del:active { color: var(--red); background: var(--red-dim); }
-  .entry-notes { font-size: 11px; color: var(--amber); margin-top: 2px; }
+/* ── STATS ── */
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
+.stat-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 8px;text-align:center;}
+.stat-card.sale{background:var(--green-dim);border-color:var(--green-border);}
+.stat-num{font-size:26px;font-weight:800;color:var(--text);line-height:1;}
+.stat-card.sale .stat-num{color:var(--green);}
+.stat-name{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;}
+.funnel-row{display:flex;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);gap:10px;}
+.funnel-row:last-child{border-bottom:none;}
+.funnel-lbl{font-size:13px;font-weight:600;flex:1;}
+.funnel-n{font-size:14px;font-weight:800;min-width:28px;text-align:right;}
+.funnel-pct{font-size:12px;color:var(--muted);min-width:40px;text-align:right;}
+.funnel-bar-bg{flex:2;background:var(--surface3);border-radius:99px;height:5px;overflow:hidden;}
+.funnel-bar{height:100%;background:var(--green);border-radius:99px;transition:width 0.5s;}
+.day-tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.day-tbl th{text-align:left;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:5px 6px;border-bottom:1px solid var(--border);}
+.day-tbl td{padding:8px 6px;border-bottom:1px solid var(--border);color:var(--text);}
+.day-tbl tr:last-child td{border-bottom:none;}
+.day-tbl td:nth-child(n+2){text-align:center;font-weight:700;}
+.tbl-sale{color:var(--green);}
+.tbl-zero{color:var(--surface3);}
+.empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
+.empty-icon{font-size:42px;margin-bottom:12px;}
+.empty-state h3{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;}
+.empty-state p{font-size:14px;line-height:1.6;}
 
-  /* ---- Stats page ---- */
-  .stats-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
-  .stat-card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: 12px 10px;
-    text-align: center;
-  }
-  .stat-card.sale-card { background: var(--green-dim); border-color: rgba(74,222,128,0.25); }
-  .stat-num { font-size: 26px; font-weight: 700; color: var(--text); line-height: 1; }
-  .sale-card .stat-num { color: var(--green); }
-  .stat-name { font-size: 10px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; margin-top: 4px; }
-
-  /* Funnel */
-  .funnel-row {
-    display: flex;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--border);
-    gap: 12px;
-  }
-  .funnel-row:last-child { border-bottom: none; }
-  .funnel-label { font-size: 14px; font-weight: 600; flex: 1; }
-  .funnel-count { font-size: 14px; font-weight: 700; color: var(--text); min-width: 30px; text-align: right; }
-  .funnel-pct { font-size: 12px; color: var(--muted); min-width: 42px; text-align: right; }
-  .funnel-bar-wrap { flex: 2; background: var(--surface2); border-radius: 99px; height: 6px; overflow: hidden; }
-  .funnel-bar { height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.5s ease; }
-  .funnel-bar.green { background: var(--green); }
-
-  /* Per-day table */
-  .day-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .day-table th { text-align: left; color: var(--muted); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; padding: 6px 8px; border-bottom: 1px solid var(--border); }
-  .day-table td { padding: 9px 8px; border-bottom: 1px solid var(--border); color: var(--text); }
-  .day-table tr:last-child td { border-bottom: none; }
-  .day-table td:nth-child(n+3) { text-align: center; font-weight: 700; }
-  .day-table .sale-cell { color: var(--green); }
-  .day-table .zero { color: var(--surface2); }
-
-  /* Empty state */
-  .empty-state { text-align: center; padding: 40px 20px; color: var(--muted); }
-  .empty-icon { font-size: 40px; margin-bottom: 12px; }
-  .empty-state h3 { font-size: 16px; font-weight: 600; color: var(--text); margin-bottom: 6px; }
-  .empty-state p { font-size: 14px; line-height: 1.6; }
-
-  /* Utility */
-  .mt8 { margin-top: 8px; }
-  .mt12 { margin-top: 12px; }
-  .mb12 { margin-bottom: 12px; }
-  .divider { height: 1px; background: var(--border); margin: 12px 0; }
+/* Loading spinner */
+.spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--border2);border-top-color:var(--green);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:8px;}
+@keyframes spin{to{transform:rotate(360deg);}}
 </style>
 </head>
 <body>
 <div id="app">
 
-  <!-- HEADER -->
-  <div id="header">
-    <div id="header-top">
-      <div>
-        <div id="app-name">Knock<span>Track</span></div>
-        <div id="day-label" style="font-size:11px;color:var(--muted);margin-top:1px;display:none"></div>
-      </div>
-      <div style="display:flex;align-items:center;gap:8px">
-        <div id="session-badge">● LIVE</div>
-        <button id="new-day-btn" onclick="confirmNewDay()" style="display:none;background:rgba(248,113,113,0.12);border:1px solid rgba(248,113,113,0.3);color:var(--red);border-radius:99px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">New day</button>
-      </div>
+<!-- HEADER -->
+<div id="header">
+  <div id="header-row1">
+    <div>
+      <div id="app-name">Knock<span>Track</span></div>
+      <div id="day-label" style="font-size:11px;color:var(--muted);margin-top:1px;display:none;"></div>
     </div>
-    <div id="counter-bar">
-      <div class="counter-pill" id="c-knocked"><div class="counter-num" id="cn-knocked">0</div><div class="counter-lbl">Knocked</div></div>
-      <div class="counter-pill" id="c-spoke"><div class="counter-num" id="cn-spoke">0</div><div class="counter-lbl">Spoke</div></div>
-      <div class="counter-pill" id="c-speed"><div class="counter-num" id="cn-speed">0</div><div class="counter-lbl">Speed</div></div>
-      <div class="counter-pill" id="c-pres"><div class="counter-num" id="cn-pres">0</div><div class="counter-lbl">Presentation</div></div>
-      <div class="counter-pill" id="c-close"><div class="counter-num" id="cn-close">0</div><div class="counter-lbl">Close</div></div>
-      <div class="counter-pill highlight" id="c-sale"><div class="counter-num" id="cn-sale">0</div><div class="counter-lbl">Sales</div></div>
+    <div id="header-right">
+      <div id="live-badge">● LIVE</div>
+      <button id="new-day-btn" onclick="confirmNewDay()">New day</button>
     </div>
   </div>
-
-  <!-- CONTENT -->
-  <div id="content">
-
-    <!-- LOG PAGE -->
-    <div class="page active" id="page-log">
-
-      <!-- Session card -->
-      <div class="card">
-        <div class="card-title">Today's session</div>
-
-        <!-- No session -->
-        <div id="no-session-msg">
-          <p>Start a new session to begin logging doors.</p>
-          <div class="row2 mb12">
-            <div>
-              <label class="field-label" for="inp-postcode">Postcode</label>
-              <input type="text" id="inp-postcode" placeholder="e.g. SW1A 2AA" autocomplete="off" autocorrect="off" spellcheck="false" style="text-transform:uppercase">
-            </div>
-            <div>
-              <label class="field-label" for="inp-area">Area name</label>
-              <input type="text" id="inp-area" placeholder="e.g. Battersea" autocomplete="off">
-            </div>
-          </div>
-          <button class="btn-primary" onclick="startSession()">Start session</button>
-        </div>
-
-        <!-- Active session -->
-        <div id="active-session-info">
-          <div id="asi-postcode"></div>
-          <div id="asi-date"></div>
-          <div class="divider"></div>
-
-          <!-- Lap tracker -->
-          <div class="card-title" style="margin-bottom:8px">Lap tracker</div>
-          <div id="lap-tracker-ui"></div>
-
-          <div class="divider"></div>
-          <button class="btn-secondary btn-danger" onclick="confirmEndSession()">End session</button>
-        </div>
-      </div>
-
-      <!-- Door entry form (hidden until session active) -->
-      <div class="card" id="door-form" style="display:none">
-        <div class="card-title">Log a door</div>
-        <div class="row2 mb12">
-          <div>
-            <label class="field-label" for="inp-house">House no. / name</label>
-            <input type="text" id="inp-house" placeholder="e.g. 42" autocomplete="off" autocorrect="off">
-          </div>
-          <div>
-            <label class="field-label" for="inp-result">Result</label>
-            <select id="inp-result" onchange="onResultChange()">
-              <option value="no-answer">No answer</option>
-              <option value="spoke">Spoke to them</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- Outcome toggles — shown when spoke -->
-        <div id="toggle-section">
-          <div class="card-title">Outcomes — tap to toggle</div>
-          <div class="toggle-grid">
-            <div class="tog-btn" id="tog-speed" onclick="cycleToggle('speed')" role="button" aria-label="Speed test">
-              <span>⚡ Speed test</span><div class="tog-state" id="ts-speed">—</div>
-            </div>
-            <div class="tog-btn" id="tog-pres" onclick="cycleToggle('pres')" role="button" aria-label="Presentation">
-              <span>📊 Presentation</span><div class="tog-state" id="ts-pres">—</div>
-            </div>
-            <div class="tog-btn" id="tog-close" onclick="cycleToggle('close')" role="button" aria-label="Close attempt">
-              <span>🤝 Close</span><div class="tog-state" id="ts-close">—</div>
-            </div>
-            <div class="tog-btn" id="tog-sale" onclick="cycleToggle('sale')" role="button" aria-label="Sale">
-              <span>⭐ Sale</span><div class="tog-state" id="ts-sale">—</div>
-            </div>
-          </div>
-        </div>
-
-        <div class="mt12">
-          <label class="field-label" for="inp-notes">Notes (optional)</label>
-          <input type="text" id="inp-notes" placeholder="Callback time, name, objection..." autocomplete="off">
-        </div>
-
-        <div class="mt12">
-          <div class="tog-btn" id="tog-comeback" onclick="toggleComeback()" role="button" aria-label="Come back">
-            <span>🔁 Come back</span><div class="tog-state" id="ts-comeback">—</div>
-          </div>
-        </div>
-
-        <div class="mt12">
-          <button class="btn-primary" onclick="addDoor()">+ Add door</button>
-        </div>
-      </div>
-
-      <!-- Recent doors in this session -->
-      <div id="recent-doors-card" style="display:none">
-        <div class="card-title" style="padding: 0 4px 8px;">Recent doors this session</div>
-        <div id="recent-doors-list"></div>
-      </div>
-
-    </div><!-- /page-log -->
-
-    <!-- HISTORY PAGE -->
-    <div class="page" id="page-history">
-      <div id="history-list"></div>
-    </div>
-
-    <!-- STATS PAGE -->
-    <div class="page" id="page-stats">
-      <div id="stats-content"></div>
-    </div>
-
-  </div><!-- /content -->
-
-  <!-- NAV -->
-  <div id="nav">
-    <button class="nav-btn active" onclick="showPage('log',this)">
-      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 17h7M17.5 14v7"/></svg>
-      Log
-    </button>
-    <button class="nav-btn" onclick="showPage('history',this)">
-      <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 18 0 9 9 0 0 0-18 0"/><polyline points="12 8 12 12 14 14"/></svg>
-      History
-    </button>
-    <button class="nav-btn" onclick="showPage('stats',this)">
-      <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      Stats
-    </button>
+  <div id="counter-bar">
+    <div class="cpill"><div class="cpill-num" id="cn-knocked">0</div><div class="cpill-lbl">Knocked</div></div>
+    <div class="cpill"><div class="cpill-num" id="cn-spoke">0</div><div class="cpill-lbl">Spoke</div></div>
+    <div class="cpill"><div class="cpill-num" id="cn-speed">0</div><div class="cpill-lbl">Speed</div></div>
+    <div class="cpill"><div class="cpill-num" id="cn-pres">0</div><div class="cpill-lbl">Pres.</div></div>
+    <div class="cpill"><div class="cpill-num" id="cn-close">0</div><div class="cpill-lbl">Close</div></div>
+    <div class="cpill sale"><div class="cpill-num" id="cn-sale">0</div><div class="cpill-lbl">Sales</div></div>
   </div>
+</div>
+
+<!-- CONTENT -->
+<div id="content">
+
+  <!-- ── LOG PAGE ── -->
+  <div class="page active" id="page-log">
+
+    <!-- Session card -->
+    <div class="card">
+      <div class="card-title">Session</div>
+
+      <!-- No session -->
+      <div id="no-sess-wrap">
+        <p>Start a session to begin logging doors.</p>
+        <div class="row2 mb10">
+          <div>
+            <label class="fl" for="inp-postcode">Postcode</label>
+            <input type="text" id="inp-postcode" placeholder="SW1A 2AA" autocomplete="off" autocorrect="off" spellcheck="false" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+          </div>
+          <div>
+            <label class="fl" for="inp-area">Area (optional)</label>
+            <input type="text" id="inp-area" placeholder="e.g. Battersea" autocomplete="off">
+          </div>
+        </div>
+        <button class="btn btn-green" onclick="startSession()">Start session</button>
+      </div>
+
+      <!-- Active session -->
+      <div id="active-sess-wrap">
+        <div id="asi-pc"></div>
+        <div id="asi-date"></div>
+        <div class="divider"></div>
+
+        <!-- Lap tracker -->
+        <div class="card-title">Lap tracker</div>
+        <div id="lap-ui"></div>
+
+        <div class="divider"></div>
+        <button class="btn btn-outline" onclick="confirmEndSession()">End session</button>
+      </div>
+    </div>
+
+    <!-- Address list section (shown after postcode loaded) -->
+    <div id="postcode-section">
+      <div class="card" style="padding:12px">
+        <div id="map"></div>
+        <div class="filter-tabs">
+          <div class="ftab active" onclick="setFilter('all',this)">All</div>
+          <div class="ftab" onclick="setFilter('pending',this)">Pending</div>
+          <div class="ftab" onclick="setFilter('comeback',this)">Come back</div>
+          <div class="ftab" onclick="setFilter('knocked',this)">Knocked</div>
+        </div>
+        <div id="addr-list-wrap">
+          <div id="addr-list"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── HISTORY PAGE ── -->
+  <div class="page" id="page-history">
+    <div id="history-list"></div>
+  </div>
+
+  <!-- ── STATS PAGE ── -->
+  <div class="page" id="page-stats">
+    <div id="stats-content"></div>
+  </div>
+
+</div><!-- /content -->
+
+<!-- NAV -->
+<div id="nav">
+  <button class="nav-btn active" onclick="showPage('log',this)">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><path d="M14 17h7M17.5 14v7"/></svg>Log
+  </button>
+  <button class="nav-btn" onclick="showPage('history',this)">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><polyline points="12 8 12 12 14 14"/></svg>History
+  </button>
+  <button class="nav-btn" onclick="showPage('stats',this)">
+    <svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Stats
+  </button>
+</div>
 
 </div><!-- /app -->
+
+<!-- Spoke detail modal -->
+<div id="spoke-modal">
+  <div id="spoke-modal-inner">
+    <div id="spoke-modal-title">Log outcomes</div>
+    <div id="spoke-modal-addr"></div>
+    <div class="tog-grid" id="spoke-togs">
+      <div class="tog" id="tog-speed" onclick="cycleT('speed')"><span>⚡ Speed test</span><div class="tog-val" id="tv-speed">—</div></div>
+      <div class="tog" id="tog-pres" onclick="cycleT('pres')"><span>📊 Presentation</span><div class="tog-val" id="tv-pres">—</div></div>
+      <div class="tog" id="tog-close" onclick="cycleT('close')"><span>🤝 Close</span><div class="tog-val" id="tv-close">—</div></div>
+      <div class="tog" id="tog-sale" onclick="cycleT('sale')"><span>⭐ Sale</span><div class="tog-val" id="tv-sale">—</div></div>
+    </div>
+    <div class="mt10">
+      <label class="fl" for="spoke-notes">Notes (optional)</label>
+      <input type="text" id="spoke-notes" placeholder="Name, callback time, objection..." autocomplete="off">
+    </div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="btn btn-outline btn-sm" style="flex:1" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-green btn-sm" style="flex:2" onclick="confirmSpoke()">Save</button>
+    </div>
+  </div>
+</div>
 
 <div id="toast"></div>
 
 <script>
-// ============================================================
-// DATA LAYER — localStorage with structured schema
-// ============================================================
-const STORAGE_KEY = 'knocktrack_v1';
+// ════════════════════════════════════════════
+// DATA
+// ════════════════════════════════════════════
+const SK = 'knocktrack_v2';
+function loadDB(){try{const r=localStorage.getItem(SK);if(r)return JSON.parse(r);}catch(e){}return{sessions:[],activeSessionId:null,currentDayId:null};}
+function saveDB(){try{localStorage.setItem(SK,JSON.stringify(DB));}catch(e){console.error(e);}}
+let DB = loadDB();
+function getActiveSess(){return DB.sessions.find(s=>s.id===DB.activeSessionId)||null;}
 
-function loadData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch(e) { console.error('Load error', e); }
-  return { sessions: [], activeSessionId: null, currentDayId: null };
-}
+// ════════════════════════════════════════════
+// ADDRESS STATE
+// ════════════════════════════════════════════
+let addrList = [];      // full list of addresses for postcode
+let addrFilter = 'all';
+let mapInstance = null;
 
-function saveData(data) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch(e) { console.error('Save error', e); }
-}
+// per-entry toggle state for spoke modal
+let toggs = {speed:null,pres:null,close:null,sale:null};
+let modalAddrIdx = null; // index into addrList
 
-let DB = loadData();
-
-function getActiveSession() {
-  return DB.sessions.find(s => s.id === DB.activeSessionId) || null;
-}
-
-// ============================================================
-// STATE
-// ============================================================
-let toggleState = { speed: null, pres: null, close: null, sale: null };
-let comeBackState = false;
-
-function toggleComeback() {
-  comeBackState = !comeBackState;
-  const btn = document.getElementById('tog-comeback');
-  const state = document.getElementById('ts-comeback');
-  if (comeBackState) {
-    btn.classList.add('state-yes');
-    state.textContent = 'Y';
-  } else {
-    btn.classList.remove('state-yes');
-    state.textContent = '—';
-  }
-}
-
-function resetComeback() {
-  comeBackState = false;
-  const btn = document.getElementById('tog-comeback');
-  const state = document.getElementById('ts-comeback');
-  if (btn) { btn.classList.remove('state-yes'); state.textContent = '—'; }
-}
-
-// ============================================================
-// LAP TRACKER
-// ============================================================
-function startLap() {
-  const sess = getActiveSession();
-  if (!sess) return;
-  if (!sess.laps) sess.laps = [];
-  const lapNum = sess.laps.length + 1;
-  sess.laps.push({ lap: lapNum, startTs: Date.now() });
-  saveData(DB);
-  renderLapTracker();
-  showToast('Lap ' + lapNum + ' started ✓');
-}
-
-function renderLapTracker() {
-  const el = document.getElementById('lap-tracker-ui');
-  if (!el) return;
-  const sess = getActiveSession();
-  if (!sess) { el.innerHTML = ''; return; }
-  const laps = sess.laps || [];
-  const currentLap = laps.length;
-  const canStart = currentLap < 3;
-
-  const lapRows = laps.map(l => {
-    const t = new Date(l.startTs);
-    const timeStr = t.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
-      <div style="font-size:14px;font-weight:700;color:var(--accent)">Lap ${l.lap}</div>
-      <div style="font-size:13px;color:var(--muted)">Started ${timeStr}</div>
-    </div>`;
-  }).join('');
-
-  el.innerHTML = `
-    <div style="margin-bottom:8px">${lapRows || '<div style="font-size:13px;color:var(--muted);margin-bottom:8px">No laps started yet</div>'}</div>
-    ${canStart
-      ? `<button class="btn-primary" onclick="startLap()" style="font-size:14px;padding:10px">▶ Start lap ${currentLap + 1}</button>`
-      : `<div style="text-align:center;font-size:13px;color:var(--green);font-weight:600;padding:6px 0">✓ All 3 laps completed</div>`
-    }
-  `;
-}
-
-// ============================================================
-// SESSION MANAGEMENT
-// ============================================================
-function startSession() {
+// ════════════════════════════════════════════
+// SESSION
+// ════════════════════════════════════════════
+function startSession(){
   const pc = document.getElementById('inp-postcode').value.trim().toUpperCase();
   const area = document.getElementById('inp-area').value.trim();
-  if (!pc) { shakeField('inp-postcode'); return; }
+  if(!pc){shakeEl('inp-postcode');return;}
 
-  // Start a new day automatically if none exists
-  if (!DB.currentDayId) {
-    DB.currentDayId = Date.now().toString();
-  }
+  if(!DB.currentDayId) DB.currentDayId = Date.now().toString();
 
   const now = new Date();
-  const session = {
-    id: 'sess_' + Date.now(),
-    dayId: DB.currentDayId,
-    postcode: pc,
-    area: area,
-    date: now.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }),
-    dateISO: now.toISOString().split('T')[0],
-    entries: []
+  const sess = {
+    id:'sess_'+Date.now(),
+    dayId:DB.currentDayId,
+    postcode:pc, area,
+    date:now.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'}),
+    dateISO:now.toISOString().split('T')[0],
+    laps:[],
+    entries:[]
   };
-
-  DB.sessions.push(session);
-  DB.activeSessionId = session.id;
-  saveData(DB);
-
-  document.getElementById('inp-postcode').value = '';
-  document.getElementById('inp-area').value = '';
-
+  DB.sessions.push(sess);
+  DB.activeSessionId = sess.id;
+  saveDB();
+  document.getElementById('inp-postcode').value='';
+  document.getElementById('inp-area').value='';
   renderSessionUI();
   updateCounters();
+  loadPostcode(pc);
   showToast('Session started ✓');
 }
 
-function confirmEndSession() {
-  if (confirm('End this session? You can always view it in History.')) {
-    DB.activeSessionId = null;
-    saveData(DB);
-    renderSessionUI();
-    updateCounters();
-    showToast('Session saved');
-  }
+function confirmEndSession(){
+  if(!confirm('End this session? History is kept safe.'))return;
+  DB.activeSessionId=null;
+  saveDB();
+  addrList=[];
+  document.getElementById('postcode-section').style.display='none';
+  if(mapInstance){mapInstance.remove();mapInstance=null;}
+  renderSessionUI();
+  updateCounters();
+  showToast('Session saved ✓');
 }
 
-function confirmNewDay() {
-  if (confirm('Start a new day? The counters will reset to zero. All your history is kept safe.')) {
-    DB.currentDayId = Date.now().toString();
-    DB.activeSessionId = null;
-    saveData(DB);
-    renderSessionUI();
-    updateCounters();
-    showToast('New day started — counters reset ✓');
-  }
+function confirmNewDay(){
+  if(!confirm('Start a new day? Counters reset to zero. All history kept.'))return;
+  DB.currentDayId=Date.now().toString();
+  DB.activeSessionId=null;
+  saveDB();
+  addrList=[];
+  document.getElementById('postcode-section').style.display='none';
+  if(mapInstance){mapInstance.remove();mapInstance=null;}
+  renderSessionUI();
+  updateCounters();
+  showToast('New day started ✓');
 }
 
-function renderSessionUI() {
-  const sess = getActiveSession();
-  const noSess = document.getElementById('no-session-msg');
-  const activeSess = document.getElementById('active-session-info');
-  const doorForm = document.getElementById('door-form');
-  const badge = document.getElementById('session-badge');
-
-  if (sess) {
-    noSess.style.display = 'none';
-    activeSess.style.display = 'block';
-    doorForm.style.display = 'block';
-    badge.style.display = 'block';
-    document.getElementById('asi-postcode').textContent = sess.postcode + (sess.area ? ' — ' + sess.area : '');
+function renderSessionUI(){
+  const sess=getActiveSess();
+  document.getElementById('no-sess-wrap').style.display = sess?'none':'block';
+  document.getElementById('active-sess-wrap').style.display = sess?'block':'none';
+  document.getElementById('live-badge').style.display = sess?'block':'none';
+  if(sess){
+    document.getElementById('asi-pc').textContent = sess.postcode+(sess.area?' — '+sess.area:'');
     document.getElementById('asi-date').textContent = sess.date;
-    renderLapTracker();
-  } else {
-    noSess.style.display = 'block';
-    activeSess.style.display = 'none';
-    doorForm.style.display = 'none';
-    badge.style.display = 'none';
-  }
-  renderRecentDoors();
-}
-
-// ============================================================
-// DOOR ENTRY
-// ============================================================
-function onResultChange() {
-  const val = document.getElementById('inp-result').value;
-  const ts = document.getElementById('toggle-section');
-  ts.style.display = val === 'spoke' ? 'block' : 'none';
-  if (val !== 'spoke') resetToggles();
-}
-
-function cycleToggle(key) {
-  // null → true → false → null
-  if (toggleState[key] === null) toggleState[key] = true;
-  else if (toggleState[key] === true) toggleState[key] = false;
-  else toggleState[key] = null;
-  renderToggle(key);
-}
-
-function renderToggle(key) {
-  const btn = document.getElementById('tog-' + key);
-  const state = document.getElementById('ts-' + key);
-  btn.classList.remove('state-yes', 'state-no');
-  if (toggleState[key] === true) { btn.classList.add('state-yes'); state.textContent = 'Y'; }
-  else if (toggleState[key] === false) { btn.classList.add('state-no'); state.textContent = 'N'; }
-  else { state.textContent = '—'; }
-}
-
-function resetToggles() {
-  toggleState = { speed: null, pres: null, close: null, sale: null };
-  ['speed','pres','close','sale'].forEach(k => renderToggle(k));
-  resetComeback();
-}
-
-function addDoor() {
-  const sess = getActiveSession();
-  if (!sess) return;
-  const house = document.getElementById('inp-house').value.trim();
-  if (!house) { shakeField('inp-house'); return; }
-
-  const result = document.getElementById('inp-result').value;
-  const notes = document.getElementById('inp-notes').value.trim();
-
-  const entry = {
-    id: 'e_' + Date.now(),
-    house,
-    result,
-    speed: result === 'spoke' ? toggleState.speed : null,
-    pres: result === 'spoke' ? toggleState.pres : null,
-    close: result === 'spoke' ? toggleState.close : null,
-    sale: result === 'spoke' ? toggleState.sale : null,
-    comeBack: comeBackState,
-    notes,
-    ts: Date.now()
-  };
-
-  sess.entries.push(entry);
-  saveData(DB);
-
-  // Reset form
-  document.getElementById('inp-house').value = '';
-  document.getElementById('inp-notes').value = '';
-  document.getElementById('inp-result').value = 'no-answer';
-  document.getElementById('toggle-section').style.display = 'none';
-  resetToggles();
-
-  updateCounters();
-  renderRecentDoors();
-  showToast(result === 'spoke' ? 'Door logged ✓' : comeBackState ? 'No answer — come back logged ✓' : 'No answer logged ✓');
-
-  // Keep focus on house number for rapid entry
-  document.getElementById('inp-house').focus();
-}
-
-function deleteEntry(sessionId, entryId) {
-  const sess = DB.sessions.find(s => s.id === sessionId);
-  if (!sess) return;
-  if (!confirm('Delete this entry?')) return;
-  sess.entries = sess.entries.filter(e => e.id !== entryId);
-  saveData(DB);
-  updateCounters();
-  renderRecentDoors();
-  renderHistory();
-  renderStats();
-}
-
-// ============================================================
-// COUNTERS
-// ============================================================
-function countSession(sess) {
-  const knocked = sess.entries.length;
-  const spoke = sess.entries.filter(e => e.result === 'spoke').length;
-  const speed = sess.entries.filter(e => e.speed === true).length;
-  const pres = sess.entries.filter(e => e.pres === true).length;
-  const close = sess.entries.filter(e => e.close === true).length;
-  const sale = sess.entries.filter(e => e.sale === true).length;
-  return { knocked, spoke, speed, pres, close, sale };
-}
-
-function getTodaySessions() {
-  if (!DB.currentDayId) return [];
-  return DB.sessions.filter(s => s.dayId === DB.currentDayId);
-}
-
-function updateCounters() {
-  const daySessions = getTodaySessions();
-  const c = { knocked:0, spoke:0, speed:0, pres:0, close:0, sale:0 };
-  daySessions.forEach(sess => {
-    const sc = countSession(sess);
-    Object.keys(c).forEach(k => c[k] += sc[k]);
-  });
-  document.getElementById('cn-knocked').textContent = c.knocked;
-  document.getElementById('cn-spoke').textContent = c.spoke;
-  document.getElementById('cn-speed').textContent = c.speed;
-  document.getElementById('cn-pres').textContent = c.pres;
-  document.getElementById('cn-close').textContent = c.close;
-  document.getElementById('cn-sale').textContent = c.sale;
-
-  // Update day label and new day button
-  const dayLabel = document.getElementById('day-label');
-  const newDayBtn = document.getElementById('new-day-btn');
-  if (DB.currentDayId && daySessions.length > 0) {
-    const d = new Date(parseInt(DB.currentDayId));
-    dayLabel.textContent = 'Today: ' + d.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
-    dayLabel.style.display = 'block';
-    newDayBtn.style.display = 'block';
-  } else {
-    dayLabel.style.display = 'none';
-    newDayBtn.style.display = 'none';
+    renderLaps();
   }
 }
 
-// ============================================================
-// RECENT DOORS (on Log page)
-// ============================================================
-function renderRecentDoors() {
-  const sess = getActiveSession();
-  const card = document.getElementById('recent-doors-card');
-  const list = document.getElementById('recent-doors-list');
-  if (!sess || sess.entries.length === 0) { card.style.display = 'none'; return; }
-  card.style.display = 'block';
-
-  const recent = [...sess.entries].reverse().slice(0, 10);
-  list.innerHTML = recent.map(e => entryRowHTML(sess.id, e)).join('');
+// ════════════════════════════════════════════
+// LAPS
+// ════════════════════════════════════════════
+function startLap(){
+  const sess=getActiveSess();if(!sess)return;
+  if(!sess.laps)sess.laps=[];
+  const n=sess.laps.length+1;
+  sess.laps.push({lap:n,startTs:Date.now()});
+  saveDB();renderLaps();
+  showToast('Lap '+n+' started ✓');
+}
+function renderLaps(){
+  const el=document.getElementById('lap-ui');if(!el)return;
+  const sess=getActiveSess();if(!sess){el.innerHTML='';return;}
+  const laps=sess.laps||[];
+  const rows=laps.map(l=>`<div class="lap-row"><span class="lap-num">Lap ${l.lap}</span><span class="lap-time">Started ${new Date(l.startTs).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span></div>`).join('');
+  const canMore=laps.length<3;
+  el.innerHTML=(rows||'<div style="font-size:13px;color:var(--muted);margin-bottom:8px">No laps yet</div>')+
+    (canMore?`<button class="btn btn-green mt10" style="font-size:14px;padding:10px" onclick="startLap()">▶ Start lap ${laps.length+1}</button>`
+            :`<div style="text-align:center;color:var(--green);font-weight:700;font-size:13px;padding:6px 0">✓ All 3 laps done</div>`);
 }
 
-function entryRowHTML(sessionId, e) {
-  const badges = e.result === 'spoke'
-    ? `<div class="entry-badges">
-        ${badge(e.speed, 'S')}
-        ${badge(e.pres, 'P')}
-        ${badge(e.close, 'C')}
-        ${badge(e.sale, '£')}
-       </div>`
-    : `<span style="font-size:12px;color:var(--muted)">No answer</span>`;
+// ════════════════════════════════════════════
+// POSTCODE LOOKUP + MAP
+// ════════════════════════════════════════════
+async function loadPostcode(pc){
+  const sec=document.getElementById('postcode-section');
+  const listEl=document.getElementById('addr-list');
+  sec.style.display='block';
+  listEl.innerHTML=`<div style="padding:16px;text-align:center;color:var(--muted)"><span class="spinner"></span>Loading addresses…</div>`;
 
-  const cbBadge = e.comeBack
-    ? `<div class="ebadge" style="background:rgba(251,191,36,0.15);color:var(--amber);width:auto;padding:0 6px;font-size:10px">🔁</div>`
-    : '';
+  // Init map
+  await initMap(pc);
 
-  return `<div class="entry-row">
-    <div style="flex:1;min-width:0">
-      <div class="entry-house">${escHtml(e.house)}</div>
-      ${e.notes ? `<div class="entry-notes">${escHtml(e.notes)}</div>` : ''}
+  // Fetch addresses via postcodes.io for lat/lng, then getaddress.io free lookup
+  try{
+    // Get lat/lng from postcodes.io (always free, no key)
+    const geoRes = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(pc)}`);
+    const geoData = await geoRes.json();
+    if(geoData.status!==200) throw new Error('Postcode not found');
+
+    const {latitude,longitude} = geoData.result;
+
+    // Draw postcode boundary
+    await drawBoundary(pc, latitude, longitude);
+
+    // Fetch address list via postcodes.io's nearby + OS data
+    // Use ideal-postcodes free demo or fallback to generated list
+    await fetchAddresses(pc, latitude, longitude);
+
+  }catch(err){
+    listEl.innerHTML=`<div style="padding:16px;text-align:center;color:var(--red);font-size:14px">⚠ Could not load addresses for ${pc}.<br><span style="color:var(--muted);font-size:12px">Check postcode and try again.</span></div>`;
+  }
+}
+
+async function initMap(pc){
+  if(mapInstance){mapInstance.remove();mapInstance=null;}
+  const mapEl=document.getElementById('map');
+  mapEl.style.display='block';
+  // Placeholder centre while we load
+  mapInstance=L.map('map',{zoomControl:false,attributionControl:false}).setView([51.5,-0.1],15);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(mapInstance);
+}
+
+async function drawBoundary(pc, lat, lng){
+  if(!mapInstance)return;
+  mapInstance.setView([lat,lng],16);
+
+  // Try to get boundary polygon from postcodes.io
+  try{
+    const r=await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(pc)}`);
+    const d=await r.json();
+    // Draw a circle approximation centred on postcode (boundary polygon not in free API)
+    L.circle([lat,lng],{radius:150,color:'#ff69b4',fillColor:'#ff69b4',fillOpacity:0.18,weight:2,opacity:0.7}).addTo(mapInstance);
+    L.marker([lat,lng],{icon:L.divIcon({className:'',html:'<div style="background:var(--green);color:#000;font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px;white-space:nowrap">'+pc+'</div>',iconAnchor:[30,10]})}).addTo(mapInstance);
+  }catch(e){}
+}
+
+async function fetchAddresses(pc, lat, lng){
+  const listEl=document.getElementById('addr-list');
+  const sess=getActiveSess();
+
+  // Use ideal-postcodes open data (free, no key needed for lookup)
+  try{
+    const r=await fetch(`https://api.ideal-postcodes.co.uk/v1/postcodes/${encodeURIComponent(pc)}?api_key=iddqd`);
+    const d=await r.json();
+    if(d.code===2000 && d.result && d.result.length){
+      addrList=d.result.map((a,i)=>({
+        id:'a_'+i,
+        number: a.building_number||a.building_name||a.sub_building_name||String(i+1),
+        label: formatAddress(a),
+        result:null, // null=pending, 'spoke','no-answer','comeback'
+        speed:null,pres:null,close:null,sale:null,notes:'',ts:null
+      }));
+      // Merge existing entries from session
+      if(sess) mergeEntries(sess);
+      renderAddrList();
+      return;
+    }
+  }catch(e){}
+
+  // Fallback: generate numbered list from OS data via postcodes.io
+  try{
+    const r=await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(pc)}/addresses`);
+    const d=await r.json();
+    if(d.status===200&&d.result){
+      addrList=d.result.map((a,i)=>({
+        id:'a_'+i,
+        number:a.building_number||a.building_name||String(i+1),
+        label:a.line_1||a.line_2||a.thoroughfare||'Property '+(i+1),
+        result:null,speed:null,pres:null,close:null,sale:null,notes:'',ts:null
+      }));
+      if(sess)mergeEntries(sess);
+      renderAddrList();
+      return;
+    }
+  }catch(e){}
+
+  // Final fallback — manual entry mode
+  addrList=[];
+  listEl.innerHTML=`<div style="padding:12px;text-align:center">
+    <div style="color:var(--muted);font-size:13px;margin-bottom:12px">Address data unavailable for this postcode.<br>Use manual door entry below.</div>
+    <div style="display:flex;gap:8px">
+      <input type="text" id="manual-house" placeholder="House no. / name" style="flex:1">
+      <button class="btn btn-green btn-sm" onclick="addManualDoor()">Add</button>
     </div>
-    <div style="display:flex;align-items:center;gap:4px">
-      ${cbBadge}
-      ${badges}
-    </div>
-    <button class="entry-del" onclick="deleteEntry('${sessionId}','${e.id}')" aria-label="Delete">✕</button>
+    <div id="manual-list" class="mt10"></div>
   </div>`;
 }
 
-function badge(val, label) {
-  if (val === true) return `<div class="ebadge ebadge-y">${label}</div>`;
-  if (val === false) return `<div class="ebadge ebadge-n">${label}</div>`;
-  return `<div class="ebadge ebadge-na">${label}</div>`;
+function formatAddress(a){
+  const parts=[a.building_number,a.building_name,a.sub_building_name,a.thoroughfare||a.dependent_thoroughfare].filter(Boolean);
+  return parts.join(' ')||a.line_1||'Property';
 }
 
-// ============================================================
-// HISTORY PAGE
-// ============================================================
-function renderHistory() {
-  const el = document.getElementById('history-list');
-  if (DB.sessions.length === 0) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">🚪</div><h3>No sessions yet</h3><p>Start a session on the Log tab to record your first day.</p></div>`;
+function mergeEntries(sess){
+  // Map existing session entries back onto addrList by house number
+  sess.entries.forEach(e=>{
+    const match=addrList.find(a=>a.number===e.house||a.label.startsWith(e.house));
+    if(match){
+      match.result=e.result;
+      match.speed=e.speed;match.pres=e.pres;match.close=e.close;match.sale=e.sale;
+      match.notes=e.notes;match.ts=e.ts;match.entryId=e.id;
+    }
+  });
+}
+
+// ════════════════════════════════════════════
+// ADDRESS LIST RENDER
+// ════════════════════════════════════════════
+function setFilter(f,el){
+  addrFilter=f;
+  document.querySelectorAll('.ftab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  renderAddrList();
+}
+
+function renderAddrList(){
+  const el=document.getElementById('addr-list');
+  if(!addrList.length){el.innerHTML='';return;}
+
+  let filtered=addrList;
+  if(addrFilter==='pending') filtered=addrList.filter(a=>!a.result);
+  else if(addrFilter==='comeback') filtered=addrList.filter(a=>a.result==='comeback');
+  else if(addrFilter==='knocked') filtered=addrList.filter(a=>a.result&&a.result!=='comeback');
+
+  if(!filtered.length){
+    el.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted);font-size:14px">No addresses in this view</div>`;
     return;
   }
 
-  // Group sessions by dayId
-  const dayMap = {};
-  DB.sessions.forEach(s => {
-    const key = s.dayId || s.id;
-    if (!dayMap[key]) dayMap[key] = { dayId: key, sessions: [] };
-    dayMap[key].sessions.push(s);
-  });
-
-  // Sort days newest first
-  const days = Object.values(dayMap).sort((a,b) => b.dayId.localeCompare(a.dayId));
-
-  el.innerHTML = days.map(day => {
-    const isToday = day.dayId === DB.currentDayId;
-    const dayDate = day.sessions[0].date;
-    const dayTotals = { knocked:0, spoke:0, speed:0, pres:0, close:0, sale:0 };
-    day.sessions.forEach(s => {
-      const c = countSession(s);
-      Object.keys(dayTotals).forEach(k => dayTotals[k] += c[k]);
-    });
-
-    const sessionsHTML = day.sessions.map(sess => {
-      const c = countSession(sess);
-      const isActive = sess.id === DB.activeSessionId;
-      return `<div style="border-top:1px solid var(--border)">
-        <div style="padding:10px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleSessionCard('${sess.id}')">
-          <div>
-            <div style="font-size:15px;font-weight:700">${escHtml(sess.postcode)}${sess.area?' <span style="font-weight:400;color:var(--muted)">— '+escHtml(sess.area)+'</span>':''} ${isActive?'<span style="font-size:11px;background:var(--accent-dim);color:var(--accent);border-radius:99px;padding:2px 7px;font-weight:700">LIVE</span>':''}</div>
-            <div style="font-size:11px;color:var(--muted)">${c.knocked} doors · ${c.spoke} spoke · ${c.sale} sales${sess.laps && sess.laps.length ? ' · ' + sess.laps.length + ' lap' + (sess.laps.length > 1 ? 's' : '') : ''}</div>
-          </div>
-          <div class="sc-chevron" id="chev-${sess.id}">▾</div>
-        </div>
-        <div class="session-entries" id="entries-${sess.id}">
-          ${sess.laps && sess.laps.length ? `<div style="padding:8px 16px;border-bottom:1px solid var(--border);display:flex;gap:12px;flex-wrap:wrap">
-            ${sess.laps.map(l => `<span style="font-size:12px;color:var(--accent);font-weight:600">Lap ${l.lap}: ${new Date(l.startTs).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span>`).join('')}
-          </div>` : ''}
-          <div class="session-mini-counters">
-            <div class="smc-item"><div class="smc-num">${c.knocked}</div><div class="smc-lbl">Knocked</div></div>
-            <div class="smc-item"><div class="smc-num">${c.spoke}</div><div class="smc-lbl">Spoke</div></div>
-            <div class="smc-item"><div class="smc-num">${c.speed}</div><div class="smc-lbl">Speed</div></div>
-            <div class="smc-item"><div class="smc-num">${c.pres}</div><div class="smc-lbl">Presentation</div></div>
-            <div class="smc-item"><div class="smc-num">${c.close}</div><div class="smc-lbl">Close</div></div>
-            <div class="smc-item" style="background:var(--green-dim)"><div class="smc-num" style="color:var(--green)">${c.sale}</div><div class="smc-lbl">Sales</div></div>
-          </div>
-          ${sess.entries.length === 0
-            ? `<div style="padding:16px;text-align:center;color:var(--muted);font-size:14px">No doors logged yet</div>`
-            : [...sess.entries].reverse().map(e => entryRowHTML(sess.id, e)).join('')}
-        </div>
-      </div>`;
-    }).join('');
-
-    return `<div class="session-card">
-      <div style="padding:14px 16px;display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border-radius:var(--radius) var(--radius) 0 0">
-        <div>
-          <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em">${isToday ? '📅 Today' : '📅 ' + dayDate}</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:2px">${day.sessions.length} session${day.sessions.length>1?'s':''} · ${dayTotals.knocked} doors · ${dayTotals.spoke} spoke</div>
-        </div>
-        ${dayTotals.sale > 0 ? `<div class="sc-badge">${dayTotals.sale} sale${dayTotals.sale>1?'s':''}</div>` : ''}
+  el.innerHTML=filtered.map((a,i)=>{
+    const idx=addrList.indexOf(a);
+    const isKnocked=a.result&&a.result!=='comeback';
+    const isCB=a.result==='comeback';
+    return `<div class="addr-row ${isKnocked?'knocked':''} ${isCB?'comeback':''}" id="arow-${idx}">
+      <div style="flex:1;min-width:0">
+        <div class="addr-name">${escH(a.label)}</div>
+        ${a.notes?`<div class="addr-sub">${escH(a.notes)}</div>`:''}
+        ${a.result==='spoke'?`<div class="addr-sub" style="color:var(--green)">💬 Spoke ${spokenBadges(a)}</div>`:''}
+        ${isCB?`<div class="addr-sub" style="color:var(--amber)">🔁 Come back</div>`:''}
       </div>
-      ${sessionsHTML}
+      <div class="addr-actions">
+        <button class="addr-btn spoke ${a.result==='spoke'?'active-state':''}" onclick="tapSpoke(${idx})">💬</button>
+        <button class="addr-btn noanswer ${a.result==='no-answer'?'active-state':''}" onclick="tapNoAnswer(${idx})">✕</button>
+        <button class="addr-btn comeback ${isCB?'active-state':''}" onclick="tapComeback(${idx})">🔁</button>
+      </div>
     </div>`;
   }).join('');
 }
 
-function toggleSessionCard(id) {
-  const entries = document.getElementById('entries-' + id);
-  const chev = document.getElementById('chev-' + id);
-  const open = entries.classList.toggle('open');
-  chev.classList.toggle('open', open);
+function spokenBadges(a){
+  const b=(v,l)=>v===true?`<span style="color:var(--green)">${l}</span>`:v===false?`<span style="color:var(--red)">${l}</span>`:'';
+  return [b(a.speed,'⚡'),b(a.pres,'📊'),b(a.close,'🤝'),b(a.sale,'⭐')].filter(Boolean).join(' ');
 }
 
-// ============================================================
-// STATS PAGE
-// ============================================================
-function pct(a, b) {
-  if (!b) return '—';
-  return Math.round(a / b * 100) + '%';
+// ════════════════════════════════════════════
+// ADDRESS TAPS
+// ════════════════════════════════════════════
+function tapNoAnswer(idx){
+  const a=addrList[idx];
+  const wasResult=a.result;
+  a.result='no-answer';a.ts=Date.now();
+  persistEntry(idx);
+  updateCounters();
+  renderAddrList();
+  showToast('No answer logged ✓');
 }
 
-function renderStats() {
-  const el = document.getElementById('stats-content');
-  if (DB.sessions.length === 0) {
-    el.innerHTML = `<div class="empty-state"><div class="empty-icon">📊</div><h3>No data yet</h3><p>Log some doors to see your stats and conversion funnel.</p></div>`;
+function tapComeback(idx){
+  const a=addrList[idx];
+  // Toggle comeback off if already set
+  if(a.result==='comeback'){a.result=null;a.ts=null;removeEntry(idx);}
+  else{a.result='comeback';a.ts=Date.now();persistEntry(idx);}
+  updateCounters();
+  renderAddrList();
+  showToast(a.result==='comeback'?'Come back marked ✓':'Come back removed');
+}
+
+function tapSpoke(idx){
+  modalAddrIdx=idx;
+  toggs={speed:null,pres:null,close:null,sale:null};
+  // Pre-fill if already logged
+  const a=addrList[idx];
+  if(a.result==='spoke'){
+    toggs={speed:a.speed,pres:a.pres,close:a.close,sale:a.sale};
+    document.getElementById('spoke-notes').value=a.notes||'';
+  } else {
+    document.getElementById('spoke-notes').value='';
+  }
+  ['speed','pres','close','sale'].forEach(k=>renderTog(k));
+  document.getElementById('spoke-modal-title').textContent='Spoke to resident';
+  document.getElementById('spoke-modal-addr').textContent=a.label;
+  document.getElementById('spoke-modal').classList.add('open');
+}
+
+function closeModal(){
+  document.getElementById('spoke-modal').classList.remove('open');
+  modalAddrIdx=null;
+}
+
+function confirmSpoke(){
+  if(modalAddrIdx===null)return;
+  const a=addrList[modalAddrIdx];
+  a.result='spoke';
+  a.speed=toggs.speed;a.pres=toggs.pres;a.close=toggs.close;a.sale=toggs.sale;
+  a.notes=document.getElementById('spoke-notes').value.trim();
+  a.ts=Date.now();
+  persistEntry(modalAddrIdx);
+  closeModal();
+  updateCounters();
+  renderAddrList();
+  showToast('Spoke logged ✓');
+}
+
+// ════════════════════════════════════════════
+// PERSIST TO SESSION
+// ════════════════════════════════════════════
+function persistEntry(idx){
+  const sess=getActiveSess();if(!sess)return;
+  const a=addrList[idx];
+  if(a.entryId){
+    const ex=sess.entries.find(e=>e.id===a.entryId);
+    if(ex){ex.result=a.result;ex.speed=a.speed;ex.pres=a.pres;ex.close=a.close;ex.sale=a.sale;ex.notes=a.notes;ex.ts=a.ts;}
+  } else {
+    const e={id:'e_'+Date.now(),house:a.number,fullAddr:a.label,result:a.result,speed:a.speed,pres:a.pres,close:a.close,sale:a.sale,comeBack:a.result==='comeback',notes:a.notes,ts:a.ts};
+    sess.entries.push(e);
+    a.entryId=e.id;
+  }
+  saveDB();
+}
+
+function removeEntry(idx){
+  const sess=getActiveSess();if(!sess)return;
+  const a=addrList[idx];
+  if(a.entryId){sess.entries=sess.entries.filter(e=>e.id!==a.entryId);a.entryId=null;}
+  saveDB();
+}
+
+function deleteEntry(sessionId,entryId){
+  const sess=DB.sessions.find(s=>s.id===sessionId);if(!sess)return;
+  if(!confirm('Delete this entry?'))return;
+  sess.entries=sess.entries.filter(e=>e.id!==entryId);
+  saveDB();
+  updateCounters();
+  renderHistory();
+}
+
+// ════════════════════════════════════════════
+// MANUAL DOOR (fallback)
+// ════════════════════════════════════════════
+function addManualDoor(){
+  const sess=getActiveSess();if(!sess)return;
+  const h=document.getElementById('manual-house').value.trim();
+  if(!h){shakeEl('manual-house');return;}
+  const e={id:'e_'+Date.now(),house:h,fullAddr:h,result:'no-answer',speed:null,pres:null,close:null,sale:null,comeBack:false,notes:'',ts:Date.now()};
+  sess.entries.push(e);saveDB();
+  document.getElementById('manual-house').value='';
+  updateCounters();
+  const ml=document.getElementById('manual-list');
+  if(ml) ml.innerHTML=sess.entries.slice().reverse().slice(0,5).map(e=>`<div style="font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);color:var(--text)">${escH(e.house)}</div>`).join('');
+  showToast('Door logged ✓');
+}
+
+// ════════════════════════════════════════════
+// TOGGLES (modal)
+// ════════════════════════════════════════════
+function cycleT(k){
+  if(toggs[k]===null)toggs[k]=true;
+  else if(toggs[k]===true)toggs[k]=false;
+  else toggs[k]=null;
+  renderTog(k);
+}
+function renderTog(k){
+  const btn=document.getElementById('tog-'+k);
+  const val=document.getElementById('tv-'+k);
+  btn.classList.remove('yes','no');
+  if(toggs[k]===true){btn.classList.add('yes');val.textContent='Y';}
+  else if(toggs[k]===false){btn.classList.add('no');val.textContent='N';}
+  else val.textContent='—';
+}
+
+// ════════════════════════════════════════════
+// COUNTERS
+// ════════════════════════════════════════════
+function countSess(sess){
+  const knocked=sess.entries.length;
+  const spoke=sess.entries.filter(e=>e.result==='spoke').length;
+  const speed=sess.entries.filter(e=>e.speed===true).length;
+  const pres=sess.entries.filter(e=>e.pres===true).length;
+  const close=sess.entries.filter(e=>e.close===true).length;
+  const sale=sess.entries.filter(e=>e.sale===true).length;
+  const comeback=sess.entries.filter(e=>e.result==='comeback').length;
+  return{knocked,spoke,speed,pres,close,sale,comeback};
+}
+function getTodaySess(){
+  if(!DB.currentDayId)return[];
+  return DB.sessions.filter(s=>s.dayId===DB.currentDayId);
+}
+function updateCounters(){
+  const c={knocked:0,spoke:0,speed:0,pres:0,close:0,sale:0,comeback:0};
+  getTodaySess().forEach(s=>{const sc=countSess(s);Object.keys(c).forEach(k=>c[k]+=sc[k]);});
+  document.getElementById('cn-knocked').textContent=c.knocked;
+  document.getElementById('cn-spoke').textContent=c.spoke;
+  document.getElementById('cn-speed').textContent=c.speed;
+  document.getElementById('cn-pres').textContent=c.pres;
+  document.getElementById('cn-close').textContent=c.close;
+  document.getElementById('cn-sale').textContent=c.sale;
+  const dayLabel=document.getElementById('day-label');
+  const newDayBtn=document.getElementById('new-day-btn');
+  const daySess=getTodaySess();
+  if(DB.currentDayId&&daySess.length){
+    const d=new Date(parseInt(DB.currentDayId));
+    dayLabel.textContent='Today: '+d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+    dayLabel.style.display='block';newDayBtn.style.display='block';
+  } else {dayLabel.style.display='none';newDayBtn.style.display='none';}
+}
+
+// ════════════════════════════════════════════
+// HISTORY
+// ════════════════════════════════════════════
+function renderHistory(){
+  const el=document.getElementById('history-list');
+  if(!DB.sessions.length){
+    el.innerHTML=`<div class="empty-state"><div class="empty-icon">🚪</div><h3>No sessions yet</h3><p>Start a session on the Log tab to record your first day.</p></div>`;
     return;
   }
+  const dayMap={};
+  DB.sessions.forEach(s=>{const k=s.dayId||s.id;if(!dayMap[k])dayMap[k]={dayId:k,sessions:[]};dayMap[k].sessions.push(s);});
+  const days=Object.values(dayMap).sort((a,b)=>b.dayId.localeCompare(a.dayId));
 
-  // All-time totals
-  let totals = { knocked:0, spoke:0, speed:0, pres:0, close:0, sale:0 };
-  DB.sessions.forEach(s => {
-    const c = countSession(s);
-    Object.keys(totals).forEach(k => totals[k] += c[k]);
-  });
-
-  const maxKnocked = totals.knocked || 1;
-
-  el.innerHTML = `
-    <div class="card">
-      <div class="card-title">All-time totals</div>
-      <div class="stats-grid">
-        <div class="stat-card"><div class="stat-num">${totals.knocked}</div><div class="stat-name">Knocked</div></div>
-        <div class="stat-card"><div class="stat-num">${totals.spoke}</div><div class="stat-name">Spoke</div></div>
-        <div class="stat-card"><div class="stat-num">${totals.speed}</div><div class="stat-name">Speed test</div></div>
-        <div class="stat-card"><div class="stat-num">${totals.pres}</div><div class="stat-name">Presentation</div></div>
-        <div class="stat-card"><div class="stat-num">${totals.close}</div><div class="stat-name">Close</div></div>
-        <div class="stat-card sale-card"><div class="stat-num">${totals.sale}</div><div class="stat-name">Sales</div></div>
+  el.innerHTML=days.map(day=>{
+    const isToday=day.dayId===DB.currentDayId;
+    const dt={knocked:0,spoke:0,speed:0,pres:0,close:0,sale:0,comeback:0};
+    day.sessions.forEach(s=>{const c=countSess(s);Object.keys(dt).forEach(k=>dt[k]+=c[k]);});
+    const sessHTML=day.sessions.map(sess=>{
+      const c=countSess(sess);
+      const isActive=sess.id===DB.activeSessionId;
+      const lapLine=sess.laps&&sess.laps.length?sess.laps.map(l=>`<span style="color:var(--green);font-size:11px;font-weight:700">Lap ${l.lap}: ${new Date(l.startTs).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span>`).join('  '):'';
+      return `<div>
+        <div class="sess-header" onclick="toggleSess('${sess.id}')">
+          <div>
+            <div class="sess-pc">${escH(sess.postcode)}${sess.area?' <span style="font-weight:400;color:var(--muted)">— '+escH(sess.area)+'</span>':''}${isActive?' <span style="font-size:10px;background:var(--green-dim);color:var(--green);border-radius:99px;padding:2px 7px;font-weight:800">LIVE</span>':''}</div>
+            <div class="sess-meta">${c.knocked} doors · ${c.spoke} spoke${lapLine?' · '+lapLine:''}</div>
+          </div>
+          <div class="sess-chev" id="chev-${sess.id}">▾</div>
+        </div>
+        <div class="sess-body" id="sbody-${sess.id}">
+          <div class="mini-counters">
+            <div class="mc-item"><div class="mc-num">${c.knocked}</div><div class="mc-lbl">Knocked</div></div>
+            <div class="mc-item"><div class="mc-num">${c.spoke}</div><div class="mc-lbl">Spoke</div></div>
+            <div class="mc-item"><div class="mc-num">${c.speed}</div><div class="mc-lbl">Speed</div></div>
+            <div class="mc-item"><div class="mc-num">${c.pres}</div><div class="mc-lbl">Pres.</div></div>
+            <div class="mc-item"><div class="mc-num">${c.close}</div><div class="mc-lbl">Close</div></div>
+            <div class="mc-item sale"><div class="mc-num">${c.sale}</div><div class="mc-lbl">Sales</div></div>
+            <div class="mc-item comeback-mc"><div class="mc-num">${c.comeback}</div><div class="mc-lbl">CB</div></div>
+          </div>
+          ${sess.entries.length?[...sess.entries].reverse().map(e=>entryRowHTML(sess.id,e)).join('')
+            :`<div style="padding:14px;text-align:center;color:var(--muted);font-size:13px">No entries</div>`}
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="day-block">
+      <div class="day-header" onclick="toggleDay('${day.dayId}')">
+        <div>
+          <div class="day-label">${isToday?'📅 Today':new Date(parseInt(day.dayId)).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'})}</div>
+          <div class="day-sub">${day.sessions.length} session${day.sessions.length>1?'s':''} · ${dt.knocked} doors · ${dt.spoke} spoke</div>
+        </div>
+        ${dt.sale?`<div class="day-sale-badge">${dt.sale} sale${dt.sale>1?'s':''}</div>`:''}
       </div>
-    </div>
-
-    <div class="card">
-      <div class="card-title">Conversion funnel</div>
-      ${funnelRow('Doors knocked', totals.knocked, totals.knocked, maxKnocked, false)}
-      ${funnelRow('Spoke to resident', totals.spoke, totals.knocked, maxKnocked, false)}
-      ${funnelRow('Speed test delivered', totals.speed, totals.spoke, maxKnocked, false)}
-      ${funnelRow('Presentation delivered', totals.pres, totals.spoke, maxKnocked, false)}
-      ${funnelRow('Close attempted', totals.close, totals.pres, maxKnocked, false)}
-      ${funnelRow('Sale made', totals.sale, totals.close, maxKnocked, true)}
-    </div>
-
-    <div class="card">
-      <div class="card-title">Per day breakdown</div>
-      <div style="overflow-x:auto">
-        <table class="day-table">
-          <thead>
-            <tr>
-              <th>Day / Postcode</th>
-              <th style="text-align:center">🚪</th>
-              <th style="text-align:center">💬</th>
-              <th style="text-align:center">⚡</th>
-              <th style="text-align:center">📊</th>
-              <th style="text-align:center">🤝</th>
-              <th style="text-align:center">⭐</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${(() => {
-              const dayMap = {};
-              DB.sessions.forEach(s => {
-                const key = s.dayId || s.id;
-                if (!dayMap[key]) dayMap[key] = { dayId: key, date: s.date, sessions: [] };
-                dayMap[key].sessions.push(s);
-              });
-              const days = Object.values(dayMap).sort((a,b) => b.dayId.localeCompare(a.dayId));
-              return days.map(day => {
-                const dayTotals = { knocked:0, spoke:0, speed:0, pres:0, close:0, sale:0 };
-                day.sessions.forEach(s => { const c=countSession(s); Object.keys(dayTotals).forEach(k=>dayTotals[k]+=c[k]); });
-                const isToday = day.dayId === DB.currentDayId;
-                const sessRows = day.sessions.map(s => {
-                  const c = countSession(s);
-                  return `<tr>
-                    <td style="padding-left:20px"><div style="font-size:12px;font-weight:600">${escHtml(s.postcode)}${s.area?' · '+escHtml(s.area):''}</div></td>
-                    <td style="text-align:center;font-size:12px">${c.knocked}</td>
-                    <td style="text-align:center;font-size:12px">${c.spoke||'<span class="zero">0</span>'}</td>
-                    <td style="text-align:center;font-size:12px">${c.speed||'<span class="zero">0</span>'}</td>
-                    <td style="text-align:center;font-size:12px">${c.pres||'<span class="zero">0</span>'}</td>
-                    <td style="text-align:center;font-size:12px">${c.close||'<span class="zero">0</span>'}</td>
-                    <td style="text-align:center;font-size:12px;font-weight:700;color:${c.sale?'var(--green)':'var(--surface2)'}">${c.sale}</td>
-                  </tr>`;
-                }).join('');
-                return `<tr style="background:var(--surface2)">
-                  <td><div style="font-weight:700;font-size:13px">${isToday?'Today':day.date.split(',').slice(0,2).join(',')}</div><div style="font-size:10px;color:var(--muted)">${day.sessions.length} session${day.sessions.length>1?'s':''}</div></td>
-                  <td style="text-align:center;font-weight:700">${dayTotals.knocked}</td>
-                  <td style="text-align:center;font-weight:700">${dayTotals.spoke||'<span class="zero">0</span>'}</td>
-                  <td style="text-align:center;font-weight:700">${dayTotals.speed||'<span class="zero">0</span>'}</td>
-                  <td style="text-align:center;font-weight:700">${dayTotals.pres||'<span class="zero">0</span>'}</td>
-                  <td style="text-align:center;font-weight:700">${dayTotals.close||'<span class="zero">0</span>'}</td>
-                  <td style="text-align:center;font-weight:700;color:${dayTotals.sale?'var(--green)':'var(--surface2)'}">${dayTotals.sale}</td>
-                </tr>${sessRows}`;
-              }).join('');
-            })()}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  `;
+      <div class="day-body" id="daybody-${day.dayId}">${sessHTML}</div>
+    </div>`;
+  }).join('');
 }
 
-function funnelRow(label, count, denom, max, isGreen) {
-  const width = max ? Math.round(count / max * 100) : 0;
-  const p = pct(count, denom);
-  return `<div class="funnel-row">
-    <div class="funnel-label">${label}</div>
-    <div class="funnel-count">${count}</div>
-    <div class="funnel-pct">${p !== '—' ? p : ''}</div>
-    <div class="funnel-bar-wrap"><div class="funnel-bar${isGreen?' green':''}" style="width:${width}%"></div></div>
+function toggleDay(id){
+  const b=document.getElementById('daybody-'+id);if(b)b.classList.toggle('open');
+}
+function toggleSess(id){
+  const b=document.getElementById('sbody-'+id);if(b)b.classList.toggle('open');
+  const c=document.getElementById('chev-'+id);if(c)c.classList.toggle('open');
+}
+
+function entryRowHTML(sessId,e){
+  const cb=e.result==='comeback'||e.comeBack;
+  return `<div class="entry-row">
+    <div style="flex:1;min-width:0">
+      <div class="entry-house">${escH(e.house)}</div>
+      ${e.notes?`<div class="entry-notes">${escH(e.notes)}</div>`:''}
+    </div>
+    <div class="entry-badges">
+      ${cb?`<div class="ebadge eb-cb">🔁</div>`:''}
+      ${e.result==='spoke'?`<div class="ebadge" style="background:var(--green-dim);color:var(--green);font-size:9px">💬</div>`:''}
+      ${bdg(e.speed,'S')}${bdg(e.pres,'P')}${bdg(e.close,'C')}${bdg(e.sale,'£')}
+    </div>
+    <button class="entry-del" onclick="deleteEntry('${sessId}','${e.id}')">✕</button>
+  </div>`;
+}
+function bdg(v,l){
+  if(v===true)return`<div class="ebadge eb-y">${l}</div>`;
+  if(v===false)return`<div class="ebadge eb-n">${l}</div>`;
+  return`<div class="ebadge eb-na">${l}</div>`;
+}
+
+// ════════════════════════════════════════════
+// STATS
+// ════════════════════════════════════════════
+function renderStats(){
+  const el=document.getElementById('stats-content');
+  if(!DB.sessions.length){
+    el.innerHTML=`<div class="empty-state"><div class="empty-icon">📊</div><h3>No data yet</h3><p>Start logging doors to see your stats.</p></div>`;
+    return;
+  }
+  const tot={knocked:0,spoke:0,speed:0,pres:0,close:0,sale:0,comeback:0};
+  DB.sessions.forEach(s=>{const c=countSess(s);Object.keys(tot).forEach(k=>tot[k]+=c[k]);});
+  const mx=tot.knocked||1;
+  const fr=(a,b)=>b?Math.round(a/b*100)+'%':'—';
+
+  const dayMap={};
+  DB.sessions.forEach(s=>{const k=s.dayId||s.id;if(!dayMap[k])dayMap[k]={dayId:k,date:s.date,sessions:[]};dayMap[k].sessions.push(s);});
+  const days=Object.values(dayMap).sort((a,b)=>b.dayId.localeCompare(a.dayId));
+
+  el.innerHTML=`
+  <div class="card">
+    <div class="card-title">All-time totals</div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="stat-num">${tot.knocked}</div><div class="stat-name">Knocked</div></div>
+      <div class="stat-card"><div class="stat-num">${tot.spoke}</div><div class="stat-name">Spoke</div></div>
+      <div class="stat-card"><div class="stat-num">${tot.speed}</div><div class="stat-name">Speed test</div></div>
+      <div class="stat-card"><div class="stat-num">${tot.pres}</div><div class="stat-name">Presentation</div></div>
+      <div class="stat-card"><div class="stat-num">${tot.close}</div><div class="stat-name">Close</div></div>
+      <div class="stat-card sale"><div class="stat-num">${tot.sale}</div><div class="stat-name">Sales</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">Conversion funnel</div>
+    ${fRow('Doors knocked',tot.knocked,tot.knocked,mx)}
+    ${fRow('Spoke to resident',tot.spoke,tot.knocked,mx)}
+    ${fRow('Speed test',tot.speed,tot.spoke,mx)}
+    ${fRow('Presentation',tot.pres,tot.spoke,mx)}
+    ${fRow('Close attempted',tot.close,tot.pres,mx)}
+    ${fRow('Sale made',tot.sale,tot.close,mx,true)}
+  </div>
+  <div class="card">
+    <div class="card-title">Per day</div>
+    <div style="overflow-x:auto">
+    <table class="day-tbl">
+      <thead><tr><th>Day</th><th>🚪</th><th>💬</th><th>⚡</th><th>📊</th><th>🤝</th><th>⭐</th><th>🔁</th></tr></thead>
+      <tbody>
+      ${days.map(day=>{
+        const dt={knocked:0,spoke:0,speed:0,pres:0,close:0,sale:0,comeback:0};
+        day.sessions.forEach(s=>{const c=countSess(s);Object.keys(dt).forEach(k=>dt[k]+=c[k]);});
+        const isToday=day.dayId===DB.currentDayId;
+        const label=isToday?'Today':new Date(parseInt(day.dayId)).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+        const z=(n)=>n?n:`<span class="tbl-zero">0</span>`;
+        return`<tr>
+          <td style="font-weight:700;font-size:12px">${label}</td>
+          <td>${dt.knocked}</td><td>${z(dt.spoke)}</td><td>${z(dt.speed)}</td>
+          <td>${z(dt.pres)}</td><td>${z(dt.close)}</td>
+          <td class="${dt.sale?'tbl-sale':''}">${dt.sale}</td>
+          <td style="color:var(--amber)">${z(dt.comeback)}</td>
+        </tr>`;
+      }).join('')}
+      </tbody>
+    </table>
+    </div>
   </div>`;
 }
 
-// ============================================================
-// NAVIGATION
-// ============================================================
-function showPage(name, btn) {
-  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('page-' + name).classList.add('active');
+function fRow(lbl,n,denom,mx,isGreen=false){
+  const w=mx?Math.round(n/mx*100):0;
+  const p=denom?Math.round(n/denom*100)+'%':'—';
+  return`<div class="funnel-row">
+    <div class="funnel-lbl">${lbl}</div>
+    <div class="funnel-n">${n}</div>
+    <div class="funnel-pct">${p!=='—'?p:''}</div>
+    <div class="funnel-bar-bg"><div class="funnel-bar${isGreen?' style="background:var(--green)"':''}" style="width:${w}%${isGreen?';background:var(--green)':''}"></div></div>
+  </div>`;
+}
+
+// ════════════════════════════════════════════
+// NAV
+// ════════════════════════════════════════════
+function showPage(name,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('page-'+name).classList.add('active');
   btn.classList.add('active');
-
-  if (name === 'history') renderHistory();
-  if (name === 'stats') renderStats();
-
-  document.getElementById('content').scrollTop = 0;
+  if(name==='history')renderHistory();
+  if(name==='stats')renderStats();
+  document.getElementById('content').scrollTop=0;
 }
 
-// ============================================================
-// UTILITIES
-// ============================================================
-function showToast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(() => t.classList.remove('show'), 1800);
+// ════════════════════════════════════════════
+// UTILS
+// ════════════════════════════════════════════
+function showToast(msg){
+  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),1800);
 }
-
-function shakeField(id) {
-  const el = document.getElementById(id);
-  el.style.borderColor = 'var(--red)';
-  el.style.boxShadow = '0 0 0 3px rgba(248,113,113,0.2)';
-  el.focus();
-  setTimeout(() => { el.style.borderColor = ''; el.style.boxShadow = ''; }, 1500);
+function shakeEl(id){
+  const e=document.getElementById(id);
+  e.style.borderColor='var(--red)';e.style.boxShadow='0 0 0 3px var(--red-dim)';e.focus();
+  setTimeout(()=>{e.style.borderColor='';e.style.boxShadow='';},1500);
 }
+function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-function escHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
+// Close modal on backdrop tap
+document.getElementById('spoke-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
 
-// ============================================================
+// ════════════════════════════════════════════
 // INIT
-// ============================================================
+// ════════════════════════════════════════════
 renderSessionUI();
 updateCounters();
+// If there's an active session on reload, re-show address section
+(function(){
+  const sess=getActiveSess();
+  if(sess){loadPostcode(sess.postcode);}
+})();
 </script>
 </body>
 </html>
