@@ -4,249 +4,235 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="KnockTrack">
-<meta name="theme-color" content="#0a0a0a">
+<meta name="theme-color" content="#f0f2f5">
 <title>KnockTrack</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 :root {
-  --bg:       #0a0a0a;
-  --surface:  #141414;
-  --surface2: #1e1e1e;
-  --surface3: #252525;
-  --border:   rgba(255,255,255,0.07);
-  --border2:  rgba(255,255,255,0.12);
-  --text:     #f0f0f0;
-  --muted:    #777;
-  --muted2:   #555;
-  --green:    #00e676;
-  --green2:   #00c853;
-  --green-dim:rgba(0,230,118,0.10);
-  --green-border:rgba(0,230,118,0.25);
-  --red:      #ff5252;
-  --red-dim:  rgba(255,82,82,0.10);
-  --amber:    #ffc400;
-  --amber-dim:rgba(255,196,0,0.10);
-  --amber-border:rgba(255,196,0,0.3);
-  --blue:     #448aff;
-  --radius:   16px;
-  --radius-sm:10px;
-  --safe-top: env(safe-area-inset-top,0px);
-  --safe-bot: env(safe-area-inset-bottom,0px);
+  --bg:           #f0f2f5;
+  --surface:      #ffffff;
+  --surface2:     #f8fafc;
+  --surface3:     #f1f4f8;
+  --border:       #e2e8f0;
+  --border2:      #cbd5e1;
+  --text:         #0f172a;
+  --text2:        #334155;
+  --muted:        #64748b;
+  --muted2:       #94a3b8;
+  --green:        #16a34a;
+  --green-lt:     #dcfce7;
+  --green-dim:    rgba(22,163,74,0.09);
+  --green-border: rgba(22,163,74,0.3);
+  --red:          #dc2626;
+  --red-dim:      rgba(220,38,38,0.08);
+  --red-border:   rgba(220,38,38,0.3);
+  --amber:        #d97706;
+  --amber-lt:     #fef3c7;
+  --amber-dim:    rgba(217,119,6,0.09);
+  --amber-border: rgba(217,119,6,0.3);
+  --radius:       14px;
+  --radius-sm:    9px;
+  --safe-top:     env(safe-area-inset-top,0px);
+  --safe-bot:     env(safe-area-inset-bottom,0px);
+  --shadow:       0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.05);
+  --shadow-md:    0 4px 6px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.05);
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;font-size:16px;line-height:1.5;overscroll-behavior:none;}
 
-/* App shell */
+/* ── APP SHELL ── */
 #app{display:flex;flex-direction:column;height:100%;max-width:480px;margin:0 auto;}
 
-/* Header */
+/* ── HEADER ── */
 #header{
   padding:calc(var(--safe-top) + 12px) 16px 10px;
-  background:var(--bg);
+  background:var(--surface);
   border-bottom:1px solid var(--border);
-  flex-shrink:0;
-  position:sticky;top:0;z-index:50;
+  flex-shrink:0;position:sticky;top:0;z-index:50;
+  box-shadow:var(--shadow);
 }
-#header-row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
-#app-name{font-size:21px;font-weight:800;letter-spacing:-0.5px;}
+#hrow1{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+#app-name{font-size:20px;font-weight:800;letter-spacing:-0.4px;color:var(--text);}
 #app-name span{color:var(--green);}
-#header-right{display:flex;align-items:center;gap:8px;}
-#live-badge{font-size:11px;font-weight:700;background:var(--green-dim);color:var(--green);border:1px solid var(--green-border);border-radius:99px;padding:3px 10px;display:none;}
-#new-day-btn{display:none;background:var(--red-dim);border:1px solid rgba(255,82,82,0.3);color:var(--red);border-radius:99px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+#hright{display:flex;align-items:center;gap:8px;}
+#live-badge{display:none;font-size:11px;font-weight:700;background:var(--green-dim);color:var(--green);border:1px solid var(--green-border);border-radius:99px;padding:3px 10px;}
+#new-day-btn{display:none;background:var(--red-dim);border:1px solid var(--red-border);color:var(--red);border-radius:99px;padding:4px 12px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;}
+#day-label{font-size:11px;color:var(--muted);margin-top:1px;display:none;}
 
-/* Counter bar */
-#counter-bar{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;}
+/* ── COUNTER BAR ── */
+#counter-bar{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:1px;}
 #counter-bar::-webkit-scrollbar{display:none;}
-.cpill{
-  flex-shrink:0;display:flex;flex-direction:column;align-items:center;
-  background:var(--surface);border:1px solid var(--border2);border-radius:10px;
-  padding:6px 10px;min-width:60px;
-}
-.cpill.sale{background:var(--green-dim);border-color:var(--green-border);}
-.cpill-num{font-size:20px;font-weight:800;color:var(--text);line-height:1;}
-.cpill.sale .cpill-num{color:var(--green);}
-.cpill-lbl{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:3px;white-space:nowrap;}
+.cpill{flex-shrink:0;display:flex;flex-direction:column;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:5px 10px;min-width:58px;}
+.cpill.g{background:var(--green-dim);border-color:var(--green-border);}
+.cpill-n{font-size:19px;font-weight:800;color:var(--text);line-height:1;}
+.cpill.g .cpill-n{color:var(--green);}
+.cpill-l{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;white-space:nowrap;}
 
-/* Nav */
-#nav{display:flex;background:var(--surface);border-top:1px solid var(--border);padding-bottom:var(--safe-bot);flex-shrink:0;}
-.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px 8px;background:none;border:none;color:var(--muted);font-size:10px;font-weight:700;cursor:pointer;gap:3px;text-transform:uppercase;letter-spacing:0.04em;transition:color 0.15s;font-family:inherit;}
+/* ── NAV ── */
+#nav{display:flex;background:var(--surface);border-top:1px solid var(--border);padding-bottom:var(--safe-bot);flex-shrink:0;box-shadow:0 -1px 3px rgba(0,0,0,0.06);}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;padding:10px 4px 8px;background:none;border:none;color:var(--muted2);font-size:10px;font-weight:700;cursor:pointer;gap:3px;text-transform:uppercase;letter-spacing:0.04em;transition:color 0.15s;font-family:inherit;}
 .nav-btn svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
 .nav-btn.active{color:var(--green);}
 
-/* Content */
+/* ── CONTENT ── */
 #content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
 .page{display:none;padding:14px;}
 .page.active{display:block;}
 
-/* Cards */
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;}
+/* ── CARDS ── */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;box-shadow:var(--shadow);}
 .card-title{font-size:10px;font-weight:800;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:10px;}
 
-/* Form */
-label.fl{display:block;font-size:11px;font-weight:700;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.05em;}
+/* ── FORM ── */
+label.fl{display:block;font-size:11px;font-weight:700;color:var(--text2);margin-bottom:5px;text-transform:uppercase;letter-spacing:0.04em;}
 input[type=text],select{
-  width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);
-  color:var(--text);font-size:16px;padding:11px 13px;outline:none;
-  -webkit-appearance:none;appearance:none;font-family:inherit;
+  width:100%;background:var(--surface2);border:1px solid var(--border2);
+  border-radius:var(--radius-sm);color:var(--text);font-size:16px;
+  padding:11px 13px;outline:none;-webkit-appearance:none;appearance:none;font-family:inherit;
 }
-input[type=text]:focus,select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(0,230,118,0.12);}
+input[type=text]:focus,select:focus{border-color:var(--green);box-shadow:0 0 0 3px rgba(22,163,74,0.12);}
 input::placeholder{color:var(--muted2);}
-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23777' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:36px;}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 13px center;padding-right:36px;}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
-.mb10{margin-bottom:10px;}
-.mt10{margin-top:10px;}
-.mt12{margin-top:12px;}
+.mb10{margin-bottom:10px;}.mt10{margin-top:10px;}.mt12{margin-top:12px;}
 .divider{height:1px;background:var(--border);margin:12px 0;}
 
-/* Buttons */
+/* ── BUTTONS ── */
 .btn{width:100%;border:none;border-radius:var(--radius-sm);padding:13px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity 0.15s,transform 0.1s;}
 .btn:active{opacity:0.8;transform:scale(0.98);}
-.btn-green{background:var(--green);color:#000;}
+.btn-green{background:var(--green);color:#fff;}
 .btn-outline{background:transparent;border:1px solid var(--border2);color:var(--muted);}
-.btn-outline:hover{border-color:var(--red);color:var(--red);}
-.btn-sm{padding:8px 14px;font-size:13px;width:auto;border-radius:8px;}
+.btn-sm{padding:9px 16px;font-size:13px;width:auto;border-radius:8px;}
+.btn-red-outline{background:transparent;border:1px solid var(--red-border);color:var(--red);}
 
-/* Toggle buttons */
-.tog{
-  display:flex;align-items:center;justify-content:space-between;
-  background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);
-  padding:11px 13px;cursor:pointer;color:var(--text);font-size:14px;font-weight:600;
-  transition:all 0.15s;user-select:none;
-}
-.tog .tog-val{width:26px;height:18px;border-radius:99px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;background:var(--surface3);color:var(--muted);border:1px solid var(--border2);}
+/* ── TOGGLES (modal) ── */
+.tog{display:flex;align-items:center;justify-content:space-between;background:var(--surface2);border:1.5px solid var(--border2);border-radius:var(--radius-sm);padding:11px 13px;cursor:pointer;color:var(--text);font-size:14px;font-weight:600;transition:all 0.15s;user-select:none;}
+.tog .tv{width:26px;height:18px;border-radius:99px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;background:var(--surface3);color:var(--muted);border:1px solid var(--border2);}
 .tog.yes{background:var(--green-dim);border-color:var(--green-border);}
-.tog.yes .tog-val{background:var(--green);color:#000;border-color:transparent;}
-.tog.no{background:var(--red-dim);border-color:rgba(255,82,82,0.3);}
-.tog.no .tog-val{background:var(--red);color:#fff;border-color:transparent;}
-.tog.amb{background:var(--amber-dim);border-color:var(--amber-border);}
-.tog.amb .tog-val{background:var(--amber);color:#000;border-color:transparent;}
+.tog.yes .tv{background:var(--green);color:#fff;border-color:transparent;}
+.tog.no{background:var(--red-dim);border-color:var(--red-border);}
+.tog.no .tv{background:var(--red);color:#fff;border-color:transparent;}
 .tog-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
 
-/* Toast */
-#toast{position:fixed;bottom:calc(62px + var(--safe-bot) + 10px);left:50%;transform:translateX(-50%) translateY(16px);background:var(--green);color:#000;font-size:14px;font-weight:800;padding:10px 20px;border-radius:99px;opacity:0;transition:all 0.2s;pointer-events:none;white-space:nowrap;z-index:200;}
+/* ── TOAST ── */
+#toast{position:fixed;bottom:calc(62px + var(--safe-bot) + 10px);left:50%;transform:translateX(-50%) translateY(14px);background:var(--text);color:#fff;font-size:14px;font-weight:700;padding:10px 20px;border-radius:99px;opacity:0;transition:all 0.22s;pointer-events:none;white-space:nowrap;z-index:300;}
 #toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
 
-/* ── SESSION UI ── */
+/* ── SESSION ── */
 #no-sess-wrap p{color:var(--muted);font-size:14px;margin-bottom:12px;}
 #active-sess-wrap{display:none;}
-#asi-pc{font-size:20px;font-weight:800;color:var(--text);}
+#asi-pc{font-size:19px;font-weight:800;color:var(--text);}
 #asi-date{font-size:12px;color:var(--muted);margin-top:2px;}
-
-/* Lap tracker */
 .lap-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);}
 .lap-row:last-of-type{border-bottom:none;}
-.lap-num{font-size:13px;font-weight:800;color:var(--green);}
-.lap-time{font-size:12px;color:var(--muted);}
+.lap-n{font-size:13px;font-weight:800;color:var(--green);}
+.lap-t{font-size:12px;color:var(--muted);}
 
-/* ── ADDRESS LIST ── */
-#postcode-section{display:none;}
-#map{height:180px;border-radius:var(--radius-sm);overflow:hidden;margin-bottom:12px;border:1px solid var(--border);}
-.filter-tabs{display:flex;gap:6px;margin-bottom:10px;}
-.ftab{flex:1;text-align:center;padding:7px 4px;border-radius:8px;border:1px solid var(--border2);font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);background:var(--surface2);transition:all 0.15s;}
-.ftab.active{background:var(--green-dim);border-color:var(--green-border);color:var(--green);}
 
-/* Address rows */
+/* ── FILTER TABS ── */
+.ftabs{display:flex;gap:5px;margin-bottom:10px;background:var(--surface2);border-radius:var(--radius-sm);padding:4px;border:1px solid var(--border);}
+.ftab{flex:1;text-align:center;padding:7px 4px;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer;color:var(--muted);background:transparent;transition:all 0.15s;white-space:nowrap;}
+.ftab.active{background:var(--surface);color:var(--text);box-shadow:var(--shadow);border:1px solid var(--border);}
+
+/* ── ADDRESS ROWS ── */
+.addr-count{font-size:12px;color:var(--muted);margin-bottom:8px;font-weight:600;}
 .addr-row{
   display:flex;align-items:center;gap:8px;
   padding:10px 12px;border-radius:var(--radius-sm);
-  background:var(--surface2);border:1px solid var(--border);
+  background:var(--surface);border:1.5px solid var(--border);
   margin-bottom:6px;transition:all 0.2s;
+  box-shadow:var(--shadow);
 }
-.addr-row.knocked{opacity:0.35;background:var(--surface);}
-.addr-row.comeback{background:var(--amber-dim);border-color:var(--amber-border);}
-.addr-name{flex:1;font-size:14px;font-weight:600;color:var(--text);}
-.addr-row.comeback .addr-name{color:var(--amber);}
+.addr-row.comeback{background:var(--amber-lt);border-color:var(--amber-border);}
+.addr-row.spoke-done{background:var(--green-lt);border-color:var(--green-border);opacity:0.7;}
+.addr-row.knocked-done{background:var(--surface2);border-color:var(--border);opacity:0.55;}
+.addr-main{font-size:14px;font-weight:700;color:var(--text);}
+.addr-row.comeback .addr-main{color:var(--amber);}
+.addr-row.spoke-done .addr-main{color:var(--green);}
+.addr-row.knocked-done .addr-main{color:var(--muted);text-decoration:line-through;}
 .addr-sub{font-size:11px;color:var(--muted);margin-top:1px;}
 .addr-actions{display:flex;gap:5px;flex-shrink:0;}
-.addr-btn{
-  border:none;border-radius:7px;padding:7px 9px;font-size:11px;font-weight:800;
-  cursor:pointer;font-family:inherit;white-space:nowrap;transition:all 0.15s;
-}
-.addr-btn:active{transform:scale(0.93);}
-.addr-btn.spoke{background:var(--green-dim);color:var(--green);border:1px solid var(--green-border);}
-.addr-btn.noanswer{background:var(--surface3);color:var(--muted);border:1px solid var(--border2);}
-.addr-btn.comeback{background:var(--amber-dim);color:var(--amber);border:1px solid var(--amber-border);}
-.addr-btn.active-state{filter:brightness(1.4);}
+.abt{border:none;border-radius:7px;padding:7px 9px;font-size:12px;font-weight:800;cursor:pointer;font-family:inherit;transition:all 0.15s;line-height:1;}
+.abt:active{transform:scale(0.9);}
+.abt.spoke-btn{background:var(--green-dim);color:var(--green);border:1.5px solid var(--green-border);}
+.abt.noanswer-btn{background:var(--surface2);color:var(--muted);border:1.5px solid var(--border2);}
+.abt.comeback-btn{background:var(--amber-dim);color:var(--amber);border:1.5px solid var(--amber-border);}
+.abt.active-btn{box-shadow:0 0 0 2px currentColor;}
 
-/* Spoke modal */
-#spoke-modal{display:none;position:fixed;inset:0;z-index:150;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);align-items:flex-end;}
+/* ── SPOKE MODAL ── */
+#spoke-modal{display:none;position:fixed;inset:0;z-index:150;background:rgba(15,23,42,0.45);backdrop-filter:blur(3px);align-items:flex-end;}
 #spoke-modal.open{display:flex;}
-#spoke-modal-inner{background:var(--surface);border:1px solid var(--border2);border-radius:var(--radius) var(--radius) 0 0;padding:20px 16px calc(20px + var(--safe-bot));width:100%;max-width:480px;margin:0 auto;}
-#spoke-modal-title{font-size:16px;font-weight:800;margin-bottom:4px;}
-#spoke-modal-addr{font-size:13px;color:var(--muted);margin-bottom:14px;}
+#smi{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;padding:20px 16px calc(20px + var(--safe-bot));width:100%;max-width:480px;margin:0 auto;box-shadow:var(--shadow-md);}
+#smi-title{font-size:16px;font-weight:800;color:var(--text);margin-bottom:2px;}
+#smi-addr{font-size:13px;color:var(--muted);margin-bottom:14px;}
 
 /* ── HISTORY ── */
-.day-block{margin-bottom:14px;}
-.day-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;cursor:pointer;}
-.day-label{font-size:14px;font-weight:800;}
+.day-block{margin-bottom:12px;}
+.day-hdr{display:flex;align-items:center;justify-content:space-between;padding:11px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;cursor:pointer;box-shadow:var(--shadow);}
+.day-lbl{font-size:14px;font-weight:800;color:var(--text);}
 .day-sub{font-size:11px;color:var(--muted);margin-top:2px;}
-.day-sale-badge{font-size:12px;font-weight:800;color:var(--green);background:var(--green-dim);border:1px solid var(--green-border);border-radius:99px;padding:2px 10px;}
+.day-badge{font-size:11px;font-weight:800;color:var(--green);background:var(--green-dim);border:1px solid var(--green-border);border-radius:99px;padding:2px 10px;}
 .day-body{display:none;border:1px solid var(--border);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow:hidden;}
 .day-body.open{display:block;}
-
-.sess-header{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface);border-bottom:1px solid var(--border);cursor:pointer;}
-.sess-pc{font-size:15px;font-weight:700;}
+.sess-hdr{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface2);border-bottom:1px solid var(--border);cursor:pointer;}
+.sess-pc{font-size:14px;font-weight:700;color:var(--text);}
 .sess-meta{font-size:11px;color:var(--muted);margin-top:1px;}
-.sess-chev{color:var(--muted);font-size:16px;transition:transform 0.2s;}
+.sess-chev{color:var(--muted2);font-size:15px;transition:transform 0.2s;}
 .sess-chev.open{transform:rotate(180deg);}
 .sess-body{display:none;}
 .sess-body.open{display:block;}
-
-.mini-counters{display:flex;border-bottom:1px solid var(--border);}
-.mc-item{flex:1;text-align:center;padding:8px 4px;border-right:1px solid var(--border);}
-.mc-item:last-child{border-right:none;}
-.mc-item.sale{background:var(--green-dim);}
-.mc-num{font-size:17px;font-weight:800;color:var(--text);}
-.mc-item.sale .mc-num{color:var(--green);}
-.mc-lbl{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;}
-.mc-item.comeback-mc{background:var(--amber-dim);}
-.mc-item.comeback-mc .mc-num{color:var(--amber);}
-
-.entry-row{display:flex;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);gap:8px;}
-.entry-row:last-child{border-bottom:none;}
-.entry-house{font-size:14px;font-weight:700;min-width:44px;}
-.entry-badges{display:flex;gap:4px;flex-wrap:wrap;}
-.ebadge{width:22px;height:22px;border-radius:5px;font-size:10px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+.mini-ctrs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);}
+.mc{flex:1;text-align:center;padding:8px 4px;border-right:1px solid var(--border);}
+.mc:last-child{border-right:none;}
+.mc.gs{background:var(--green-dim);}
+.mc.as{background:var(--amber-dim);}
+.mc-n{font-size:16px;font-weight:800;color:var(--text);line-height:1;}
+.mc.gs .mc-n{color:var(--green);}
+.mc.as .mc-n{color:var(--amber);}
+.mc-l{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;}
+.erow{display:flex;align-items:center;padding:9px 14px;border-bottom:1px solid var(--border);gap:8px;background:var(--surface);}
+.erow:last-child{border-bottom:none;}
+.e-house{font-size:13px;font-weight:700;min-width:44px;color:var(--text);}
+.e-badges{display:flex;gap:3px;flex-wrap:wrap;}
+.eb{width:20px;height:20px;border-radius:4px;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;}
 .eb-y{background:var(--green-dim);color:var(--green);}
 .eb-n{background:var(--red-dim);color:var(--red);}
-.eb-na{background:var(--surface3);color:var(--muted);}
+.eb-na{background:var(--surface3);color:var(--muted2);}
 .eb-cb{background:var(--amber-dim);color:var(--amber);width:auto;padding:0 5px;font-size:9px;}
-.entry-del{background:none;border:none;color:var(--muted2);font-size:16px;cursor:pointer;padding:4px;border-radius:6px;line-height:1;}
-.entry-del:active{color:var(--red);background:var(--red-dim);}
-.entry-notes{font-size:11px;color:var(--amber);margin-top:2px;}
+.e-del{background:none;border:none;color:var(--muted2);font-size:15px;cursor:pointer;padding:4px;border-radius:6px;}
+.e-del:active{color:var(--red);background:var(--red-dim);}
+.e-notes{font-size:11px;color:var(--amber);margin-top:1px;}
 
 /* ── STATS ── */
 .stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px;}
-.stat-card{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 8px;text-align:center;}
-.stat-card.sale{background:var(--green-dim);border-color:var(--green-border);}
-.stat-num{font-size:26px;font-weight:800;color:var(--text);line-height:1;}
-.stat-card.sale .stat-num{color:var(--green);}
-.stat-name{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;}
-.funnel-row{display:flex;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);gap:10px;}
-.funnel-row:last-child{border-bottom:none;}
-.funnel-lbl{font-size:13px;font-weight:600;flex:1;}
-.funnel-n{font-size:14px;font-weight:800;min-width:28px;text-align:right;}
-.funnel-pct{font-size:12px;color:var(--muted);min-width:40px;text-align:right;}
-.funnel-bar-bg{flex:2;background:var(--surface3);border-radius:99px;height:5px;overflow:hidden;}
-.funnel-bar{height:100%;background:var(--green);border-radius:99px;transition:width 0.5s;}
-.day-tbl{width:100%;border-collapse:collapse;font-size:12px;}
-.day-tbl th{text-align:left;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:5px 6px;border-bottom:1px solid var(--border);}
-.day-tbl td{padding:8px 6px;border-bottom:1px solid var(--border);color:var(--text);}
-.day-tbl tr:last-child td{border-bottom:none;}
-.day-tbl td:nth-child(n+2){text-align:center;font-weight:700;}
-.tbl-sale{color:var(--green);}
-.tbl-zero{color:var(--surface3);}
+.sc{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:11px 8px;text-align:center;box-shadow:var(--shadow);}
+.sc.gs{background:var(--green-dim);border-color:var(--green-border);}
+.sc-n{font-size:24px;font-weight:800;color:var(--text);line-height:1;}
+.sc.gs .sc-n{color:var(--green);}
+.sc-l{font-size:9px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:4px;}
+.fr{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);gap:10px;}
+.fr:last-child{border-bottom:none;}
+.fr-l{font-size:13px;font-weight:600;color:var(--text);flex:1;}
+.fr-n{font-size:13px;font-weight:800;color:var(--text);min-width:26px;text-align:right;}
+.fr-p{font-size:12px;color:var(--muted);min-width:38px;text-align:right;}
+.fr-bg{flex:2;background:var(--surface3);border-radius:99px;height:5px;overflow:hidden;border:1px solid var(--border);}
+.fr-bar{height:100%;background:var(--green);border-radius:99px;transition:width 0.5s;}
+.dtbl{width:100%;border-collapse:collapse;font-size:12px;}
+.dtbl th{text-align:left;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;padding:5px 6px;border-bottom:1px solid var(--border);}
+.dtbl td{padding:7px 6px;border-bottom:1px solid var(--border);color:var(--text);}
+.dtbl tr:last-child td{border-bottom:none;}
+.dtbl td:nth-child(n+2){text-align:center;font-weight:700;}
+.t-sale{color:var(--green);}
+.t-zero{color:var(--muted2);}
+.t-cb{color:var(--amber);}
 .empty-state{text-align:center;padding:40px 20px;color:var(--muted);}
-.empty-icon{font-size:42px;margin-bottom:12px;}
+.empty-icon{font-size:40px;margin-bottom:12px;}
 .empty-state h3{font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px;}
 .empty-state p{font-size:14px;line-height:1.6;}
-
-/* Loading spinner */
-.spinner{display:inline-block;width:18px;height:18px;border:2px solid var(--border2);border-top-color:var(--green);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:8px;}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--green);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
 @keyframes spin{to{transform:rotate(360deg);}}
+.api-note{font-size:11px;color:var(--muted);text-align:center;padding:6px 0 2px;}
 </style>
 </head>
 <body>
@@ -254,96 +240,88 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
 <!-- HEADER -->
 <div id="header">
-  <div id="header-row1">
+  <div id="hrow1">
     <div>
       <div id="app-name">Knock<span>Track</span></div>
-      <div id="day-label" style="font-size:11px;color:var(--muted);margin-top:1px;display:none;"></div>
+      <div id="day-label"></div>
     </div>
-    <div id="header-right">
+    <div id="hright">
       <div id="live-badge">● LIVE</div>
       <button id="new-day-btn" onclick="confirmNewDay()">New day</button>
     </div>
   </div>
   <div id="counter-bar">
-    <div class="cpill"><div class="cpill-num" id="cn-knocked">0</div><div class="cpill-lbl">Knocked</div></div>
-    <div class="cpill"><div class="cpill-num" id="cn-spoke">0</div><div class="cpill-lbl">Spoke</div></div>
-    <div class="cpill"><div class="cpill-num" id="cn-speed">0</div><div class="cpill-lbl">Speed</div></div>
-    <div class="cpill"><div class="cpill-num" id="cn-pres">0</div><div class="cpill-lbl">Pres.</div></div>
-    <div class="cpill"><div class="cpill-num" id="cn-close">0</div><div class="cpill-lbl">Close</div></div>
-    <div class="cpill sale"><div class="cpill-num" id="cn-sale">0</div><div class="cpill-lbl">Sales</div></div>
+    <div class="cpill"><div class="cpill-n" id="cn-knocked">0</div><div class="cpill-l">Knocked</div></div>
+    <div class="cpill"><div class="cpill-n" id="cn-spoke">0</div><div class="cpill-l">Spoke</div></div>
+    <div class="cpill"><div class="cpill-n" id="cn-speed">0</div><div class="cpill-l">Speed</div></div>
+    <div class="cpill"><div class="cpill-n" id="cn-pres">0</div><div class="cpill-l">Pres.</div></div>
+    <div class="cpill"><div class="cpill-n" id="cn-close">0</div><div class="cpill-l">Close</div></div>
+    <div class="cpill g"><div class="cpill-n" id="cn-sale">0</div><div class="cpill-l">Sales</div></div>
   </div>
 </div>
 
 <!-- CONTENT -->
 <div id="content">
 
-  <!-- ── LOG PAGE ── -->
+  <!-- LOG PAGE -->
   <div class="page active" id="page-log">
 
-    <!-- Session card -->
     <div class="card">
       <div class="card-title">Session</div>
-
       <!-- No session -->
       <div id="no-sess-wrap">
         <p>Start a session to begin logging doors.</p>
         <div class="row2 mb10">
           <div>
-            <label class="fl" for="inp-postcode">Postcode</label>
-            <input type="text" id="inp-postcode" placeholder="SW1A 2AA" autocomplete="off" autocorrect="off" spellcheck="false" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
+            <label class="fl" for="inp-pc">Postcode</label>
+            <input type="text" id="inp-pc" placeholder="BR3 1EG" autocomplete="off" autocorrect="off" spellcheck="false" style="text-transform:uppercase" oninput="this.value=this.value.toUpperCase()">
           </div>
           <div>
-            <label class="fl" for="inp-area">Area (optional)</label>
-            <input type="text" id="inp-area" placeholder="e.g. Battersea" autocomplete="off">
+            <label class="fl" for="inp-area">Area</label>
+            <input type="text" id="inp-area" placeholder="Optional" autocomplete="off">
           </div>
         </div>
         <button class="btn btn-green" onclick="startSession()">Start session</button>
       </div>
-
       <!-- Active session -->
       <div id="active-sess-wrap">
         <div id="asi-pc"></div>
         <div id="asi-date"></div>
         <div class="divider"></div>
-
-        <!-- Lap tracker -->
         <div class="card-title">Lap tracker</div>
         <div id="lap-ui"></div>
-
         <div class="divider"></div>
-        <button class="btn btn-outline" onclick="confirmEndSession()">End session</button>
+        <button class="btn btn-red-outline" onclick="confirmEndSession()">End session</button>
       </div>
     </div>
 
-    <!-- Address list section (shown after postcode loaded) -->
-    <div id="postcode-section">
+    <!-- Address section -->
+    <div id="addr-section" style="display:none">
       <div class="card" style="padding:12px">
-        <div id="map"></div>
-        <div class="filter-tabs">
-          <div class="ftab active" onclick="setFilter('all',this)">All</div>
-          <div class="ftab" onclick="setFilter('pending',this)">Pending</div>
+        <div class="ftabs">
+          <div class="ftab active" onclick="setFilter('active',this)">Active</div>
           <div class="ftab" onclick="setFilter('comeback',this)">Come back</div>
+          <div class="ftab" onclick="setFilter('all',this)">All</div>
           <div class="ftab" onclick="setFilter('knocked',this)">Knocked</div>
         </div>
-        <div id="addr-list-wrap">
-          <div id="addr-list"></div>
-        </div>
+        <div id="addr-count" class="addr-count"></div>
+        <div id="addr-list"></div>
       </div>
     </div>
 
   </div>
 
-  <!-- ── HISTORY PAGE ── -->
+  <!-- HISTORY PAGE -->
   <div class="page" id="page-history">
     <div id="history-list"></div>
   </div>
 
-  <!-- ── STATS PAGE ── -->
+  <!-- STATS PAGE -->
   <div class="page" id="page-stats">
     <div id="stats-content"></div>
   </div>
 
-</div><!-- /content -->
+</div>
 
 <!-- NAV -->
 <div id="nav">
@@ -360,22 +338,22 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 
 </div><!-- /app -->
 
-<!-- Spoke detail modal -->
+<!-- SPOKE MODAL -->
 <div id="spoke-modal">
-  <div id="spoke-modal-inner">
-    <div id="spoke-modal-title">Log outcomes</div>
-    <div id="spoke-modal-addr"></div>
-    <div class="tog-grid" id="spoke-togs">
-      <div class="tog" id="tog-speed" onclick="cycleT('speed')"><span>⚡ Speed test</span><div class="tog-val" id="tv-speed">—</div></div>
-      <div class="tog" id="tog-pres" onclick="cycleT('pres')"><span>📊 Presentation</span><div class="tog-val" id="tv-pres">—</div></div>
-      <div class="tog" id="tog-close" onclick="cycleT('close')"><span>🤝 Close</span><div class="tog-val" id="tv-close">—</div></div>
-      <div class="tog" id="tog-sale" onclick="cycleT('sale')"><span>⭐ Sale</span><div class="tog-val" id="tv-sale">—</div></div>
+  <div id="smi">
+    <div id="smi-title">Spoke to resident</div>
+    <div id="smi-addr"></div>
+    <div class="tog-grid">
+      <div class="tog" id="tog-speed" onclick="cycleT('speed')"><span>⚡ Speed test</span><div class="tv" id="tv-speed">—</div></div>
+      <div class="tog" id="tog-pres"  onclick="cycleT('pres')"><span>📊 Presentation</span><div class="tv" id="tv-pres">—</div></div>
+      <div class="tog" id="tog-close" onclick="cycleT('close')"><span>🤝 Close</span><div class="tv" id="tv-close">—</div></div>
+      <div class="tog" id="tog-sale"  onclick="cycleT('sale')"><span>⭐ Sale</span><div class="tv" id="tv-sale">—</div></div>
     </div>
     <div class="mt10">
       <label class="fl" for="spoke-notes">Notes (optional)</label>
-      <input type="text" id="spoke-notes" placeholder="Name, callback time, objection..." autocomplete="off">
+      <input type="text" id="spoke-notes" placeholder="Name, callback time, objection…" autocomplete="off">
     </div>
-    <div style="display:flex;gap:8px;margin-top:12px;">
+    <div style="display:flex;gap:8px;margin-top:12px">
       <button class="btn btn-outline btn-sm" style="flex:1" onclick="closeModal()">Cancel</button>
       <button class="btn btn-green btn-sm" style="flex:2" onclick="confirmSpoke()">Save</button>
     </div>
@@ -388,47 +366,41 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 // ════════════════════════════════════════════
 // DATA
 // ════════════════════════════════════════════
-const SK = 'knocktrack_v2';
+const SK = 'knocktrack_v3';
 function loadDB(){try{const r=localStorage.getItem(SK);if(r)return JSON.parse(r);}catch(e){}return{sessions:[],activeSessionId:null,currentDayId:null};}
-function saveDB(){try{localStorage.setItem(SK,JSON.stringify(DB));}catch(e){console.error(e);}}
+function saveDB(){try{localStorage.setItem(SK,JSON.stringify(DB));}catch(e){}}
 let DB = loadDB();
 function getActiveSess(){return DB.sessions.find(s=>s.id===DB.activeSessionId)||null;}
 
 // ════════════════════════════════════════════
 // ADDRESS STATE
 // ════════════════════════════════════════════
-let addrList = [];      // full list of addresses for postcode
-let addrFilter = 'all';
-let mapInstance = null;
-
-// per-entry toggle state for spoke modal
+let addrList = [];
+let addrFilter = 'active'; // active | comeback | all | knocked
+let mapInst = null; // kept for legacy cleanup only
 let toggs = {speed:null,pres:null,close:null,sale:null};
-let modalAddrIdx = null; // index into addrList
+let modalIdx = null;
 
 // ════════════════════════════════════════════
 // SESSION
 // ════════════════════════════════════════════
 function startSession(){
-  const pc = document.getElementById('inp-postcode').value.trim().toUpperCase();
+  const pc = document.getElementById('inp-pc').value.trim().toUpperCase();
   const area = document.getElementById('inp-area').value.trim();
-  if(!pc){shakeEl('inp-postcode');return;}
-
+  if(!pc){shakeEl('inp-pc');return;}
   if(!DB.currentDayId) DB.currentDayId = Date.now().toString();
-
   const now = new Date();
   const sess = {
-    id:'sess_'+Date.now(),
-    dayId:DB.currentDayId,
+    id:'sess_'+Date.now(), dayId:DB.currentDayId,
     postcode:pc, area,
     date:now.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'}),
     dateISO:now.toISOString().split('T')[0],
-    laps:[],
-    entries:[]
+    laps:[], entries:[]
   };
   DB.sessions.push(sess);
   DB.activeSessionId = sess.id;
   saveDB();
-  document.getElementById('inp-postcode').value='';
+  document.getElementById('inp-pc').value='';
   document.getElementById('inp-area').value='';
   renderSessionUI();
   updateCounters();
@@ -437,38 +409,33 @@ function startSession(){
 }
 
 function confirmEndSession(){
-  if(!confirm('End this session? History is kept safe.'))return;
-  DB.activeSessionId=null;
-  saveDB();
+  if(!confirm('End this session? History is kept.'))return;
+  DB.activeSessionId=null; saveDB();
   addrList=[];
-  document.getElementById('postcode-section').style.display='none';
-  if(mapInstance){mapInstance.remove();mapInstance=null;}
-  renderSessionUI();
-  updateCounters();
+  document.getElementById('addr-section').style.display='none';
+  mapInst=null;
+  renderSessionUI(); updateCounters();
   showToast('Session saved ✓');
 }
 
 function confirmNewDay(){
-  if(!confirm('Start a new day? Counters reset to zero. All history kept.'))return;
-  DB.currentDayId=Date.now().toString();
-  DB.activeSessionId=null;
-  saveDB();
+  if(!confirm('Start a new day? Counters reset. History kept.'))return;
+  DB.currentDayId=Date.now().toString(); DB.activeSessionId=null; saveDB();
   addrList=[];
-  document.getElementById('postcode-section').style.display='none';
-  if(mapInstance){mapInstance.remove();mapInstance=null;}
-  renderSessionUI();
-  updateCounters();
+  document.getElementById('addr-section').style.display='none';
+  mapInst=null;
+  renderSessionUI(); updateCounters();
   showToast('New day started ✓');
 }
 
 function renderSessionUI(){
   const sess=getActiveSess();
-  document.getElementById('no-sess-wrap').style.display = sess?'none':'block';
-  document.getElementById('active-sess-wrap').style.display = sess?'block':'none';
-  document.getElementById('live-badge').style.display = sess?'block':'none';
+  document.getElementById('no-sess-wrap').style.display=sess?'none':'block';
+  document.getElementById('active-sess-wrap').style.display=sess?'block':'none';
+  document.getElementById('live-badge').style.display=sess?'block':'none';
   if(sess){
-    document.getElementById('asi-pc').textContent = sess.postcode+(sess.area?' — '+sess.area:'');
-    document.getElementById('asi-date').textContent = sess.date;
+    document.getElementById('asi-pc').textContent=sess.postcode+(sess.area?' — '+sess.area:'');
+    document.getElementById('asi-date').textContent=sess.date;
     renderLaps();
   }
 }
@@ -478,145 +445,125 @@ function renderSessionUI(){
 // ════════════════════════════════════════════
 function startLap(){
   const sess=getActiveSess();if(!sess)return;
-  if(!sess.laps)sess.laps=[];
   const n=sess.laps.length+1;
   sess.laps.push({lap:n,startTs:Date.now()});
-  saveDB();renderLaps();
+  saveDB(); renderLaps();
   showToast('Lap '+n+' started ✓');
 }
 function renderLaps(){
   const el=document.getElementById('lap-ui');if(!el)return;
   const sess=getActiveSess();if(!sess){el.innerHTML='';return;}
   const laps=sess.laps||[];
-  const rows=laps.map(l=>`<div class="lap-row"><span class="lap-num">Lap ${l.lap}</span><span class="lap-time">Started ${new Date(l.startTs).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span></div>`).join('');
-  const canMore=laps.length<3;
-  el.innerHTML=(rows||'<div style="font-size:13px;color:var(--muted);margin-bottom:8px">No laps yet</div>')+
-    (canMore?`<button class="btn btn-green mt10" style="font-size:14px;padding:10px" onclick="startLap()">▶ Start lap ${laps.length+1}</button>`
-            :`<div style="text-align:center;color:var(--green);font-weight:700;font-size:13px;padding:6px 0">✓ All 3 laps done</div>`);
+  const rows=laps.map(l=>`<div class="lap-row"><span class="lap-n">Lap ${l.lap}</span><span class="lap-t">Started ${new Date(l.startTs).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span></div>`).join('');
+  const can=laps.length<3;
+  el.innerHTML=(rows||'<div style="font-size:13px;color:var(--muted);margin-bottom:8px">No laps started yet</div>')+
+    (can?`<button class="btn btn-green mt10" style="font-size:14px;padding:10px" onclick="startLap()">▶ Start lap ${laps.length+1}</button>`
+        :`<div style="text-align:center;color:var(--green);font-weight:700;font-size:13px;padding:6px 0">✓ All 3 laps complete</div>`);
 }
 
 // ════════════════════════════════════════════
-// POSTCODE LOOKUP + MAP
+// POSTCODE + MAP + ADDRESS LOOKUP
 // ════════════════════════════════════════════
 async function loadPostcode(pc){
-  const sec=document.getElementById('postcode-section');
+  const sec=document.getElementById('addr-section');
   const listEl=document.getElementById('addr-list');
+  const countEl=document.getElementById('addr-count');
   sec.style.display='block';
-  listEl.innerHTML=`<div style="padding:16px;text-align:center;color:var(--muted)"><span class="spinner"></span>Loading addresses…</div>`;
+  listEl.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted)"><span class="spin"></span>Looking up addresses for ${pc}…</div>`;
+  countEl.textContent='';
 
-  // Init map
-  await initMap(pc);
+  // Reset filter to active
+  addrFilter='active';
+  document.querySelectorAll('.ftab').forEach((t,i)=>{t.classList.toggle('active',i===0);});
 
-  // Fetch addresses via postcodes.io for lat/lng, then getaddress.io free lookup
+  // Fetch addresses via Overpass (OpenStreetMap) — free, no key needed
+  const found = await fetchViaOverpass(pc);
+  if(found) return;
+
+  // Fallback — manual entry
+  showManualFallback(pc, listEl, countEl);
+}
+
+async function fetchViaOverpass(pc){
+  const listEl=document.getElementById('addr-list');
+  const countEl=document.getElementById('addr-count');
+  // Query for all OSM elements tagged with this postcode
+  const q=`[out:json][timeout:20];(node["addr:postcode"="${pc}"];way["addr:postcode"="${pc}"];);out center;`;
   try{
-    // Get lat/lng from postcodes.io (always free, no key)
-    const geoRes = await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(pc)}`);
-    const geoData = await geoRes.json();
-    if(geoData.status!==200) throw new Error('Postcode not found');
+    const r=await fetch('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q));
+    if(!r.ok) throw new Error('Overpass error');
+    const d=await r.json();
+    if(!d.elements||!d.elements.length) return false;
 
-    const {latitude,longitude} = geoData.result;
+    // Filter to elements that have a house number or name
+    const raw=d.elements.filter(e=>e.tags&&(e.tags['addr:housenumber']||e.tags['addr:housename']));
+    if(!raw.length) return false;
 
-    // Draw postcode boundary
-    await drawBoundary(pc, latitude, longitude);
+    // Build address list
+    addrList=raw.map((e,i)=>{
+      const t=e.tags;
+      const num=t['addr:housenumber']||t['addr:housename']||String(i+1);
+      const street=t['addr:street']||t['addr:place']||t['addr:locality']||'';
+      const label=(num+(street?' '+street:'')).trim();
+      return{id:'a_'+i,number:num,label,result:null,speed:null,pres:null,close:null,sale:null,notes:'',ts:null,entryId:null};
+    }).sort((a,b)=>{
+      const na=parseInt(a.number),nb=parseInt(b.number);
+      if(!isNaN(na)&&!isNaN(nb)) return na-nb;
+      return a.number.localeCompare(b.number);
+    });
 
-    // Fetch address list via postcodes.io's nearby + OS data
-    // Use ideal-postcodes free demo or fallback to generated list
-    await fetchAddresses(pc, latitude, longitude);
+    // Merge back any existing entries from this session
+    const sess=getActiveSess();
+    if(sess) mergeEntries(sess);
 
+    renderAddrList();
+    showToast(`${addrList.length} addresses found ✓`);
+    return true;
   }catch(err){
-    listEl.innerHTML=`<div style="padding:16px;text-align:center;color:var(--red);font-size:14px">⚠ Could not load addresses for ${pc}.<br><span style="color:var(--muted);font-size:12px">Check postcode and try again.</span></div>`;
+    console.warn('Overpass failed:',err);
+    return false;
   }
 }
 
-async function initMap(pc){
-  if(mapInstance){mapInstance.remove();mapInstance=null;}
-  const mapEl=document.getElementById('map');
-  mapEl.style.display='block';
-  // Placeholder centre while we load
-  mapInstance=L.map('map',{zoomControl:false,attributionControl:false}).setView([51.5,-0.1],15);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{maxZoom:19}).addTo(mapInstance);
-}
-
-async function drawBoundary(pc, lat, lng){
-  if(!mapInstance)return;
-  mapInstance.setView([lat,lng],16);
-
-  // Try to get boundary polygon from postcodes.io
-  try{
-    const r=await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(pc)}`);
-    const d=await r.json();
-    // Draw a circle approximation centred on postcode (boundary polygon not in free API)
-    L.circle([lat,lng],{radius:150,color:'#ff69b4',fillColor:'#ff69b4',fillOpacity:0.18,weight:2,opacity:0.7}).addTo(mapInstance);
-    L.marker([lat,lng],{icon:L.divIcon({className:'',html:'<div style="background:var(--green);color:#000;font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px;white-space:nowrap">'+pc+'</div>',iconAnchor:[30,10]})}).addTo(mapInstance);
-  }catch(e){}
-}
-
-async function fetchAddresses(pc, lat, lng){
-  const listEl=document.getElementById('addr-list');
-  const sess=getActiveSess();
-
-  // Use ideal-postcodes open data (free, no key needed for lookup)
-  try{
-    const r=await fetch(`https://api.ideal-postcodes.co.uk/v1/postcodes/${encodeURIComponent(pc)}?api_key=iddqd`);
-    const d=await r.json();
-    if(d.code===2000 && d.result && d.result.length){
-      addrList=d.result.map((a,i)=>({
-        id:'a_'+i,
-        number: a.building_number||a.building_name||a.sub_building_name||String(i+1),
-        label: formatAddress(a),
-        result:null, // null=pending, 'spoke','no-answer','comeback'
-        speed:null,pres:null,close:null,sale:null,notes:'',ts:null
-      }));
-      // Merge existing entries from session
-      if(sess) mergeEntries(sess);
-      renderAddrList();
-      return;
-    }
-  }catch(e){}
-
-  // Fallback: generate numbered list from OS data via postcodes.io
-  try{
-    const r=await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(pc)}/addresses`);
-    const d=await r.json();
-    if(d.status===200&&d.result){
-      addrList=d.result.map((a,i)=>({
-        id:'a_'+i,
-        number:a.building_number||a.building_name||String(i+1),
-        label:a.line_1||a.line_2||a.thoroughfare||'Property '+(i+1),
-        result:null,speed:null,pres:null,close:null,sale:null,notes:'',ts:null
-      }));
-      if(sess)mergeEntries(sess);
-      renderAddrList();
-      return;
-    }
-  }catch(e){}
-
-  // Final fallback — manual entry mode
-  addrList=[];
-  listEl.innerHTML=`<div style="padding:12px;text-align:center">
-    <div style="color:var(--muted);font-size:13px;margin-bottom:12px">Address data unavailable for this postcode.<br>Use manual door entry below.</div>
-    <div style="display:flex;gap:8px">
-      <input type="text" id="manual-house" placeholder="House no. / name" style="flex:1">
-      <button class="btn btn-green btn-sm" onclick="addManualDoor()">Add</button>
+function showManualFallback(pc, listEl, countEl){
+  countEl.textContent='';
+  listEl.innerHTML=`
+    <div style="background:var(--amber-dim);border:1px solid var(--amber-border);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;font-size:13px;color:var(--amber)">
+      ⚠ No OSM address data found for <b>${pc}</b>. Enter house numbers manually below.
     </div>
-    <div id="manual-list" class="mt10"></div>
-  </div>`;
+    <div style="display:flex;gap:8px;align-items:flex-end">
+      <div style="flex:1">
+        <label class="fl" for="m-house">House no. / name</label>
+        <input type="text" id="m-house" placeholder="e.g. 42 or Rose Cottage" autocomplete="off">
+      </div>
+      <button class="btn btn-green btn-sm" onclick="addManual()">Add</button>
+    </div>
+    <div id="manual-entries" style="margin-top:10px"></div>
+  `;
 }
 
-function formatAddress(a){
-  const parts=[a.building_number,a.building_name,a.sub_building_name,a.thoroughfare||a.dependent_thoroughfare].filter(Boolean);
-  return parts.join(' ')||a.line_1||'Property';
+function addManual(){
+  const sess=getActiveSess();if(!sess)return;
+  const h=document.getElementById('m-house').value.trim();
+  if(!h){shakeEl('m-house');return;}
+  const e={id:'e_'+Date.now(),house:h,fullAddr:h,result:'no-answer',speed:null,pres:null,close:null,sale:null,comeBack:false,notes:'',ts:Date.now()};
+  sess.entries.push(e);saveDB();
+  document.getElementById('m-house').value='';
+  updateCounters();
+  const me=document.getElementById('manual-entries');
+  if(me){
+    const div=document.createElement('div');
+    div.style.cssText='padding:8px 10px;background:var(--surface);border:1.5px solid var(--border);border-radius:var(--radius-sm);margin-bottom:6px;font-size:14px;font-weight:600;color:var(--text)';
+    div.textContent=h+' — No answer';
+    me.prepend(div);
+  }
+  showToast('Added ✓');
 }
 
 function mergeEntries(sess){
-  // Map existing session entries back onto addrList by house number
   sess.entries.forEach(e=>{
-    const match=addrList.find(a=>a.number===e.house||a.label.startsWith(e.house));
-    if(match){
-      match.result=e.result;
-      match.speed=e.speed;match.pres=e.pres;match.close=e.close;match.sale=e.sale;
-      match.notes=e.notes;match.ts=e.ts;match.entryId=e.id;
-    }
+    const m=addrList.find(a=>a.number===e.house||a.label===e.fullAddr);
+    if(m){m.result=e.result;m.speed=e.speed;m.pres=e.pres;m.close=e.close;m.sale=e.sale;m.notes=e.notes;m.ts=e.ts;m.entryId=e.id;}
   });
 }
 
@@ -631,42 +578,67 @@ function setFilter(f,el){
 }
 
 function renderAddrList(){
-  const el=document.getElementById('addr-list');
-  if(!addrList.length){el.innerHTML='';return;}
+  const listEl=document.getElementById('addr-list');
+  const countEl=document.getElementById('addr-count');
+  if(!addrList.length) return;
 
-  let filtered=addrList;
-  if(addrFilter==='pending') filtered=addrList.filter(a=>!a.result);
-  else if(addrFilter==='comeback') filtered=addrList.filter(a=>a.result==='comeback');
-  else if(addrFilter==='knocked') filtered=addrList.filter(a=>a.result&&a.result!=='comeback');
+  let filtered;
+  switch(addrFilter){
+    case 'active':   filtered=addrList.filter(a=>!a.result||a.result==='comeback'); break;
+    case 'comeback': filtered=addrList.filter(a=>a.result==='comeback'); break;
+    case 'knocked':  filtered=addrList.filter(a=>a.result&&a.result!=='comeback'); break;
+    default:         filtered=[...addrList]; // 'all'
+  }
+
+  // Count label
+  const total=addrList.length;
+  const pending=addrList.filter(a=>!a.result).length;
+  const comebacks=addrList.filter(a=>a.result==='comeback').length;
+  const knocked=addrList.filter(a=>a.result&&a.result!=='comeback').length;
+  countEl.textContent=`${total} addresses · ${pending} pending · ${comebacks} come back · ${knocked} knocked`;
 
   if(!filtered.length){
-    el.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted);font-size:14px">No addresses in this view</div>`;
+    listEl.innerHTML=`<div style="text-align:center;padding:20px;color:var(--muted);font-size:14px">Nothing to show in this view</div>`;
     return;
   }
 
-  el.innerHTML=filtered.map((a,i)=>{
+  listEl.innerHTML=filtered.map(a=>{
     const idx=addrList.indexOf(a);
-    const isKnocked=a.result&&a.result!=='comeback';
     const isCB=a.result==='comeback';
-    return `<div class="addr-row ${isKnocked?'knocked':''} ${isCB?'comeback':''}" id="arow-${idx}">
+    const isSpoke=a.result==='spoke';
+    const isKnocked=a.result==='no-answer';
+    let rowClass='addr-row';
+    if(isCB) rowClass+=' comeback';
+    else if(isSpoke) rowClass+=' spoke-done';
+    else if(isKnocked) rowClass+=' knocked-done';
+
+    const spokeActive=isSpoke?'active-btn':'';
+    const naActive=isKnocked?'active-btn':'';
+    const cbActive=isCB?'active-btn':'';
+
+    const subLine=isSpoke
+      ?`<div class="addr-sub" style="color:var(--green)">💬 Spoke ${spokeSummary(a)}</div>`
+      :isCB?`<div class="addr-sub" style="color:var(--amber)">🔁 Come back</div>`
+      :isKnocked?`<div class="addr-sub" style="color:var(--muted2)">No answer</div>`:'';
+
+    return`<div class="${rowClass}" id="ar-${idx}">
       <div style="flex:1;min-width:0">
-        <div class="addr-name">${escH(a.label)}</div>
+        <div class="addr-main">${escH(a.label)}</div>
+        ${subLine}
         ${a.notes?`<div class="addr-sub">${escH(a.notes)}</div>`:''}
-        ${a.result==='spoke'?`<div class="addr-sub" style="color:var(--green)">💬 Spoke ${spokenBadges(a)}</div>`:''}
-        ${isCB?`<div class="addr-sub" style="color:var(--amber)">🔁 Come back</div>`:''}
       </div>
       <div class="addr-actions">
-        <button class="addr-btn spoke ${a.result==='spoke'?'active-state':''}" onclick="tapSpoke(${idx})">💬</button>
-        <button class="addr-btn noanswer ${a.result==='no-answer'?'active-state':''}" onclick="tapNoAnswer(${idx})">✕</button>
-        <button class="addr-btn comeback ${isCB?'active-state':''}" onclick="tapComeback(${idx})">🔁</button>
+        <button class="abt spoke-btn ${spokeActive}" onclick="tapSpoke(${idx})" aria-label="Spoke">💬</button>
+        <button class="abt noanswer-btn ${naActive}" onclick="tapNoAnswer(${idx})" aria-label="No answer">✕</button>
+        <button class="abt comeback-btn ${cbActive}" onclick="tapComeback(${idx})" aria-label="Come back">🔁</button>
       </div>
     </div>`;
   }).join('');
 }
 
-function spokenBadges(a){
+function spokeSummary(a){
   const b=(v,l)=>v===true?`<span style="color:var(--green)">${l}</span>`:v===false?`<span style="color:var(--red)">${l}</span>`:'';
-  return [b(a.speed,'⚡'),b(a.pres,'📊'),b(a.close,'🤝'),b(a.sale,'⭐')].filter(Boolean).join(' ');
+  return[b(a.speed,'⚡'),b(a.pres,'📊'),b(a.close,'🤝'),b(a.sale,'⭐')].filter(Boolean).join(' ');
 }
 
 // ════════════════════════════════════════════
@@ -674,28 +646,28 @@ function spokenBadges(a){
 // ════════════════════════════════════════════
 function tapNoAnswer(idx){
   const a=addrList[idx];
-  const wasResult=a.result;
-  a.result='no-answer';a.ts=Date.now();
-  persistEntry(idx);
-  updateCounters();
-  renderAddrList();
+  a.result='no-answer'; a.ts=Date.now();
+  persistEntry(idx); updateCounters(); renderAddrList();
   showToast('No answer logged ✓');
 }
 
 function tapComeback(idx){
   const a=addrList[idx];
-  // Toggle comeback off if already set
-  if(a.result==='comeback'){a.result=null;a.ts=null;removeEntry(idx);}
-  else{a.result='comeback';a.ts=Date.now();persistEntry(idx);}
-  updateCounters();
-  renderAddrList();
-  showToast(a.result==='comeback'?'Come back marked ✓':'Come back removed');
+  if(a.result==='comeback'){
+    a.result=null; a.ts=null;
+    removeEntry(idx);
+    showToast('Come back removed');
+  } else {
+    a.result='comeback'; a.ts=Date.now();
+    persistEntry(idx);
+    showToast('Come back marked ✓');
+  }
+  updateCounters(); renderAddrList();
 }
 
 function tapSpoke(idx){
-  modalAddrIdx=idx;
+  modalIdx=idx;
   toggs={speed:null,pres:null,close:null,sale:null};
-  // Pre-fill if already logged
   const a=addrList[idx];
   if(a.result==='spoke'){
     toggs={speed:a.speed,pres:a.pres,close:a.close,sale:a.sale};
@@ -704,43 +676,37 @@ function tapSpoke(idx){
     document.getElementById('spoke-notes').value='';
   }
   ['speed','pres','close','sale'].forEach(k=>renderTog(k));
-  document.getElementById('spoke-modal-title').textContent='Spoke to resident';
-  document.getElementById('spoke-modal-addr').textContent=a.label;
+  document.getElementById('smi-addr').textContent=a.label;
   document.getElementById('spoke-modal').classList.add('open');
 }
 
 function closeModal(){
   document.getElementById('spoke-modal').classList.remove('open');
-  modalAddrIdx=null;
+  modalIdx=null;
 }
 
 function confirmSpoke(){
-  if(modalAddrIdx===null)return;
-  const a=addrList[modalAddrIdx];
-  a.result='spoke';
-  a.speed=toggs.speed;a.pres=toggs.pres;a.close=toggs.close;a.sale=toggs.sale;
+  if(modalIdx===null)return;
+  const a=addrList[modalIdx];
+  a.result='spoke'; a.speed=toggs.speed; a.pres=toggs.pres; a.close=toggs.close; a.sale=toggs.sale;
   a.notes=document.getElementById('spoke-notes').value.trim();
   a.ts=Date.now();
-  persistEntry(modalAddrIdx);
-  closeModal();
-  updateCounters();
-  renderAddrList();
+  persistEntry(modalIdx); closeModal(); updateCounters(); renderAddrList();
   showToast('Spoke logged ✓');
 }
 
 // ════════════════════════════════════════════
-// PERSIST TO SESSION
+// PERSIST TO SESSION ENTRIES
 // ════════════════════════════════════════════
 function persistEntry(idx){
   const sess=getActiveSess();if(!sess)return;
   const a=addrList[idx];
   if(a.entryId){
     const ex=sess.entries.find(e=>e.id===a.entryId);
-    if(ex){ex.result=a.result;ex.speed=a.speed;ex.pres=a.pres;ex.close=a.close;ex.sale=a.sale;ex.notes=a.notes;ex.ts=a.ts;}
+    if(ex){ex.result=a.result;ex.speed=a.speed;ex.pres=a.pres;ex.close=a.close;ex.sale=a.sale;ex.notes=a.notes;ex.ts=a.ts;ex.comeBack=(a.result==='comeback');}
   } else {
-    const e={id:'e_'+Date.now(),house:a.number,fullAddr:a.label,result:a.result,speed:a.speed,pres:a.pres,close:a.close,sale:a.sale,comeBack:a.result==='comeback',notes:a.notes,ts:a.ts};
-    sess.entries.push(e);
-    a.entryId=e.id;
+    const e={id:'e_'+Date.now(),house:a.number,fullAddr:a.label,result:a.result,speed:a.speed,pres:a.pres,close:a.close,sale:a.sale,comeBack:(a.result==='comeback'),notes:a.notes,ts:a.ts};
+    sess.entries.push(e); a.entryId=e.id;
   }
   saveDB();
 }
@@ -752,83 +718,58 @@ function removeEntry(idx){
   saveDB();
 }
 
-function deleteEntry(sessionId,entryId){
-  const sess=DB.sessions.find(s=>s.id===sessionId);if(!sess)return;
+function deleteEntry(sessId,entryId){
+  const sess=DB.sessions.find(s=>s.id===sessId);if(!sess)return;
   if(!confirm('Delete this entry?'))return;
   sess.entries=sess.entries.filter(e=>e.id!==entryId);
-  saveDB();
-  updateCounters();
-  renderHistory();
-}
-
-// ════════════════════════════════════════════
-// MANUAL DOOR (fallback)
-// ════════════════════════════════════════════
-function addManualDoor(){
-  const sess=getActiveSess();if(!sess)return;
-  const h=document.getElementById('manual-house').value.trim();
-  if(!h){shakeEl('manual-house');return;}
-  const e={id:'e_'+Date.now(),house:h,fullAddr:h,result:'no-answer',speed:null,pres:null,close:null,sale:null,comeBack:false,notes:'',ts:Date.now()};
-  sess.entries.push(e);saveDB();
-  document.getElementById('manual-house').value='';
-  updateCounters();
-  const ml=document.getElementById('manual-list');
-  if(ml) ml.innerHTML=sess.entries.slice().reverse().slice(0,5).map(e=>`<div style="font-size:13px;padding:6px 0;border-bottom:1px solid var(--border);color:var(--text)">${escH(e.house)}</div>`).join('');
-  showToast('Door logged ✓');
+  saveDB(); updateCounters(); renderHistory(); renderStats();
 }
 
 // ════════════════════════════════════════════
 // TOGGLES (modal)
 // ════════════════════════════════════════════
 function cycleT(k){
-  if(toggs[k]===null)toggs[k]=true;
-  else if(toggs[k]===true)toggs[k]=false;
+  if(toggs[k]===null) toggs[k]=true;
+  else if(toggs[k]===true) toggs[k]=false;
   else toggs[k]=null;
   renderTog(k);
 }
 function renderTog(k){
   const btn=document.getElementById('tog-'+k);
-  const val=document.getElementById('tv-'+k);
+  const v=document.getElementById('tv-'+k);
   btn.classList.remove('yes','no');
-  if(toggs[k]===true){btn.classList.add('yes');val.textContent='Y';}
-  else if(toggs[k]===false){btn.classList.add('no');val.textContent='N';}
-  else val.textContent='—';
+  if(toggs[k]===true){btn.classList.add('yes');v.textContent='Y';}
+  else if(toggs[k]===false){btn.classList.add('no');v.textContent='N';}
+  else v.textContent='—';
 }
 
 // ════════════════════════════════════════════
 // COUNTERS
 // ════════════════════════════════════════════
-function countSess(sess){
-  const knocked=sess.entries.length;
-  const spoke=sess.entries.filter(e=>e.result==='spoke').length;
-  const speed=sess.entries.filter(e=>e.speed===true).length;
-  const pres=sess.entries.filter(e=>e.pres===true).length;
-  const close=sess.entries.filter(e=>e.close===true).length;
-  const sale=sess.entries.filter(e=>e.sale===true).length;
-  const comeback=sess.entries.filter(e=>e.result==='comeback').length;
-  return{knocked,spoke,speed,pres,close,sale,comeback};
+function countSess(s){
+  return{
+    knocked:s.entries.length,
+    spoke:s.entries.filter(e=>e.result==='spoke').length,
+    speed:s.entries.filter(e=>e.speed===true).length,
+    pres:s.entries.filter(e=>e.pres===true).length,
+    close:s.entries.filter(e=>e.close===true).length,
+    sale:s.entries.filter(e=>e.sale===true).length,
+    comeback:s.entries.filter(e=>e.result==='comeback'||e.comeBack===true).length
+  };
 }
-function getTodaySess(){
-  if(!DB.currentDayId)return[];
-  return DB.sessions.filter(s=>s.dayId===DB.currentDayId);
-}
+function getTodaySess(){if(!DB.currentDayId)return[];return DB.sessions.filter(s=>s.dayId===DB.currentDayId);}
 function updateCounters(){
-  const c={knocked:0,spoke:0,speed:0,pres:0,close:0,sale:0,comeback:0};
+  const c={knocked:0,spoke:0,speed:0,pres:0,close:0,sale:0};
   getTodaySess().forEach(s=>{const sc=countSess(s);Object.keys(c).forEach(k=>c[k]+=sc[k]);});
-  document.getElementById('cn-knocked').textContent=c.knocked;
-  document.getElementById('cn-spoke').textContent=c.spoke;
-  document.getElementById('cn-speed').textContent=c.speed;
-  document.getElementById('cn-pres').textContent=c.pres;
-  document.getElementById('cn-close').textContent=c.close;
-  document.getElementById('cn-sale').textContent=c.sale;
-  const dayLabel=document.getElementById('day-label');
-  const newDayBtn=document.getElementById('new-day-btn');
-  const daySess=getTodaySess();
-  if(DB.currentDayId&&daySess.length){
+  ['knocked','spoke','speed','pres','close','sale'].forEach(k=>document.getElementById('cn-'+k).textContent=c[k]);
+  const dl=document.getElementById('day-label');
+  const nd=document.getElementById('new-day-btn');
+  const ts=getTodaySess();
+  if(DB.currentDayId&&ts.length){
     const d=new Date(parseInt(DB.currentDayId));
-    dayLabel.textContent='Today: '+d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-    dayLabel.style.display='block';newDayBtn.style.display='block';
-  } else {dayLabel.style.display='none';newDayBtn.style.display='none';}
+    dl.textContent='Today: '+d.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+    dl.style.display='block'; nd.style.display='block';
+  } else {dl.style.display='none'; nd.style.display='none';}
 }
 
 // ════════════════════════════════════════════
@@ -836,85 +777,78 @@ function updateCounters(){
 // ════════════════════════════════════════════
 function renderHistory(){
   const el=document.getElementById('history-list');
-  if(!DB.sessions.length){
-    el.innerHTML=`<div class="empty-state"><div class="empty-icon">🚪</div><h3>No sessions yet</h3><p>Start a session on the Log tab to record your first day.</p></div>`;
-    return;
-  }
+  if(!DB.sessions.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">🚪</div><h3>No sessions yet</h3><p>Start a session on the Log tab.</p></div>`;return;}
   const dayMap={};
   DB.sessions.forEach(s=>{const k=s.dayId||s.id;if(!dayMap[k])dayMap[k]={dayId:k,sessions:[]};dayMap[k].sessions.push(s);});
   const days=Object.values(dayMap).sort((a,b)=>b.dayId.localeCompare(a.dayId));
-
   el.innerHTML=days.map(day=>{
     const isToday=day.dayId===DB.currentDayId;
     const dt={knocked:0,spoke:0,speed:0,pres:0,close:0,sale:0,comeback:0};
     day.sessions.forEach(s=>{const c=countSess(s);Object.keys(dt).forEach(k=>dt[k]+=c[k]);});
+    const dayLabel=isToday?'📅 Today':new Date(parseInt(day.dayId)).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'});
     const sessHTML=day.sessions.map(sess=>{
       const c=countSess(sess);
       const isActive=sess.id===DB.activeSessionId;
-      const lapLine=sess.laps&&sess.laps.length?sess.laps.map(l=>`<span style="color:var(--green);font-size:11px;font-weight:700">Lap ${l.lap}: ${new Date(l.startTs).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}</span>`).join('  '):'';
-      return `<div>
-        <div class="sess-header" onclick="toggleSess('${sess.id}')">
+      const lapStr=(sess.laps||[]).map(l=>`Lap ${l.lap}: ${new Date(l.startTs).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`).join('  ');
+      return`<div>
+        <div class="sess-hdr" onclick="togSess('${sess.id}')">
           <div>
-            <div class="sess-pc">${escH(sess.postcode)}${sess.area?' <span style="font-weight:400;color:var(--muted)">— '+escH(sess.area)+'</span>':''}${isActive?' <span style="font-size:10px;background:var(--green-dim);color:var(--green);border-radius:99px;padding:2px 7px;font-weight:800">LIVE</span>':''}</div>
-            <div class="sess-meta">${c.knocked} doors · ${c.spoke} spoke${lapLine?' · '+lapLine:''}</div>
+            <div class="sess-pc">${escH(sess.postcode)}${sess.area?' — '+escH(sess.area):''}${isActive?' <span style="font-size:10px;background:var(--green-dim);color:var(--green);border-radius:99px;padding:2px 7px;font-weight:800">LIVE</span>':''}</div>
+            <div class="sess-meta">${c.knocked} knocked · ${c.spoke} spoke${lapStr?' · '+lapStr:''}</div>
           </div>
           <div class="sess-chev" id="chev-${sess.id}">▾</div>
         </div>
         <div class="sess-body" id="sbody-${sess.id}">
-          <div class="mini-counters">
-            <div class="mc-item"><div class="mc-num">${c.knocked}</div><div class="mc-lbl">Knocked</div></div>
-            <div class="mc-item"><div class="mc-num">${c.spoke}</div><div class="mc-lbl">Spoke</div></div>
-            <div class="mc-item"><div class="mc-num">${c.speed}</div><div class="mc-lbl">Speed</div></div>
-            <div class="mc-item"><div class="mc-num">${c.pres}</div><div class="mc-lbl">Pres.</div></div>
-            <div class="mc-item"><div class="mc-num">${c.close}</div><div class="mc-lbl">Close</div></div>
-            <div class="mc-item sale"><div class="mc-num">${c.sale}</div><div class="mc-lbl">Sales</div></div>
-            <div class="mc-item comeback-mc"><div class="mc-num">${c.comeback}</div><div class="mc-lbl">CB</div></div>
+          <div class="mini-ctrs">
+            <div class="mc"><div class="mc-n">${c.knocked}</div><div class="mc-l">Knocked</div></div>
+            <div class="mc"><div class="mc-n">${c.spoke}</div><div class="mc-l">Spoke</div></div>
+            <div class="mc"><div class="mc-n">${c.speed}</div><div class="mc-l">Speed</div></div>
+            <div class="mc"><div class="mc-n">${c.pres}</div><div class="mc-l">Pres.</div></div>
+            <div class="mc"><div class="mc-n">${c.close}</div><div class="mc-l">Close</div></div>
+            <div class="mc gs"><div class="mc-n">${c.sale}</div><div class="mc-l">Sales</div></div>
+            <div class="mc as"><div class="mc-n">${c.comeback}</div><div class="mc-l">C/B</div></div>
           </div>
-          ${sess.entries.length?[...sess.entries].reverse().map(e=>entryRowHTML(sess.id,e)).join('')
-            :`<div style="padding:14px;text-align:center;color:var(--muted);font-size:13px">No entries</div>`}
+          ${sess.entries.length?[...sess.entries].reverse().map(e=>eRowHTML(sess.id,e)).join('')
+            :`<div style="padding:14px;text-align:center;color:var(--muted);font-size:13px">No entries logged</div>`}
         </div>
       </div>`;
     }).join('');
-    return `<div class="day-block">
-      <div class="day-header" onclick="toggleDay('${day.dayId}')">
+    return`<div class="day-block">
+      <div class="day-hdr" onclick="togDay('${day.dayId}')">
         <div>
-          <div class="day-label">${isToday?'📅 Today':new Date(parseInt(day.dayId)).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'short'})}</div>
+          <div class="day-lbl">${dayLabel}</div>
           <div class="day-sub">${day.sessions.length} session${day.sessions.length>1?'s':''} · ${dt.knocked} doors · ${dt.spoke} spoke</div>
         </div>
-        ${dt.sale?`<div class="day-sale-badge">${dt.sale} sale${dt.sale>1?'s':''}</div>`:''}
+        ${dt.sale?`<div class="day-badge">${dt.sale} sale${dt.sale>1?'s':''}</div>`:''}
       </div>
       <div class="day-body" id="daybody-${day.dayId}">${sessHTML}</div>
     </div>`;
   }).join('');
 }
-
-function toggleDay(id){
-  const b=document.getElementById('daybody-'+id);if(b)b.classList.toggle('open');
+function togDay(id){document.getElementById('daybody-'+id)?.classList.toggle('open');}
+function togSess(id){
+  document.getElementById('sbody-'+id)?.classList.toggle('open');
+  document.getElementById('chev-'+id)?.classList.toggle('open');
 }
-function toggleSess(id){
-  const b=document.getElementById('sbody-'+id);if(b)b.classList.toggle('open');
-  const c=document.getElementById('chev-'+id);if(c)c.classList.toggle('open');
-}
-
-function entryRowHTML(sessId,e){
+function eRowHTML(sessId,e){
   const cb=e.result==='comeback'||e.comeBack;
-  return `<div class="entry-row">
+  return`<div class="erow">
     <div style="flex:1;min-width:0">
-      <div class="entry-house">${escH(e.house)}</div>
-      ${e.notes?`<div class="entry-notes">${escH(e.notes)}</div>`:''}
+      <div class="e-house">${escH(e.house)}</div>
+      ${e.notes?`<div class="e-notes">${escH(e.notes)}</div>`:''}
     </div>
-    <div class="entry-badges">
-      ${cb?`<div class="ebadge eb-cb">🔁</div>`:''}
-      ${e.result==='spoke'?`<div class="ebadge" style="background:var(--green-dim);color:var(--green);font-size:9px">💬</div>`:''}
+    <div class="e-badges">
+      ${cb?`<div class="eb eb-cb">🔁</div>`:''}
+      ${e.result==='spoke'?`<div class="eb" style="background:var(--green-dim);color:var(--green);font-size:9px">💬</div>`:''}
       ${bdg(e.speed,'S')}${bdg(e.pres,'P')}${bdg(e.close,'C')}${bdg(e.sale,'£')}
     </div>
-    <button class="entry-del" onclick="deleteEntry('${sessId}','${e.id}')">✕</button>
+    <button class="e-del" onclick="deleteEntry('${sessId}','${e.id}')">✕</button>
   </div>`;
 }
 function bdg(v,l){
-  if(v===true)return`<div class="ebadge eb-y">${l}</div>`;
-  if(v===false)return`<div class="ebadge eb-n">${l}</div>`;
-  return`<div class="ebadge eb-na">${l}</div>`;
+  if(v===true)return`<div class="eb eb-y">${l}</div>`;
+  if(v===false)return`<div class="eb eb-n">${l}</div>`;
+  return`<div class="eb eb-na">${l}</div>`;
 }
 
 // ════════════════════════════════════════════
@@ -922,29 +856,23 @@ function bdg(v,l){
 // ════════════════════════════════════════════
 function renderStats(){
   const el=document.getElementById('stats-content');
-  if(!DB.sessions.length){
-    el.innerHTML=`<div class="empty-state"><div class="empty-icon">📊</div><h3>No data yet</h3><p>Start logging doors to see your stats.</p></div>`;
-    return;
-  }
+  if(!DB.sessions.length){el.innerHTML=`<div class="empty-state"><div class="empty-icon">📊</div><h3>No data yet</h3><p>Log some doors to see your stats.</p></div>`;return;}
   const tot={knocked:0,spoke:0,speed:0,pres:0,close:0,sale:0,comeback:0};
   DB.sessions.forEach(s=>{const c=countSess(s);Object.keys(tot).forEach(k=>tot[k]+=c[k]);});
   const mx=tot.knocked||1;
-  const fr=(a,b)=>b?Math.round(a/b*100)+'%':'—';
-
   const dayMap={};
-  DB.sessions.forEach(s=>{const k=s.dayId||s.id;if(!dayMap[k])dayMap[k]={dayId:k,date:s.date,sessions:[]};dayMap[k].sessions.push(s);});
+  DB.sessions.forEach(s=>{const k=s.dayId||s.id;if(!dayMap[k])dayMap[k]={dayId:k,sessions:[]};dayMap[k].sessions.push(s);});
   const days=Object.values(dayMap).sort((a,b)=>b.dayId.localeCompare(a.dayId));
-
   el.innerHTML=`
   <div class="card">
     <div class="card-title">All-time totals</div>
     <div class="stat-grid">
-      <div class="stat-card"><div class="stat-num">${tot.knocked}</div><div class="stat-name">Knocked</div></div>
-      <div class="stat-card"><div class="stat-num">${tot.spoke}</div><div class="stat-name">Spoke</div></div>
-      <div class="stat-card"><div class="stat-num">${tot.speed}</div><div class="stat-name">Speed test</div></div>
-      <div class="stat-card"><div class="stat-num">${tot.pres}</div><div class="stat-name">Presentation</div></div>
-      <div class="stat-card"><div class="stat-num">${tot.close}</div><div class="stat-name">Close</div></div>
-      <div class="stat-card sale"><div class="stat-num">${tot.sale}</div><div class="stat-name">Sales</div></div>
+      <div class="sc"><div class="sc-n">${tot.knocked}</div><div class="sc-l">Knocked</div></div>
+      <div class="sc"><div class="sc-n">${tot.spoke}</div><div class="sc-l">Spoke</div></div>
+      <div class="sc"><div class="sc-n">${tot.speed}</div><div class="sc-l">Speed test</div></div>
+      <div class="sc"><div class="sc-n">${tot.pres}</div><div class="sc-l">Presentation</div></div>
+      <div class="sc"><div class="sc-n">${tot.close}</div><div class="sc-l">Close</div></div>
+      <div class="sc gs"><div class="sc-n">${tot.sale}</div><div class="sc-l">Sales</div></div>
     </div>
   </div>
   <div class="card">
@@ -959,37 +887,34 @@ function renderStats(){
   <div class="card">
     <div class="card-title">Per day</div>
     <div style="overflow-x:auto">
-    <table class="day-tbl">
+    <table class="dtbl">
       <thead><tr><th>Day</th><th>🚪</th><th>💬</th><th>⚡</th><th>📊</th><th>🤝</th><th>⭐</th><th>🔁</th></tr></thead>
-      <tbody>
-      ${days.map(day=>{
+      <tbody>${days.map(day=>{
         const dt={knocked:0,spoke:0,speed:0,pres:0,close:0,sale:0,comeback:0};
         day.sessions.forEach(s=>{const c=countSess(s);Object.keys(dt).forEach(k=>dt[k]+=c[k]);});
         const isToday=day.dayId===DB.currentDayId;
-        const label=isToday?'Today':new Date(parseInt(day.dayId)).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-        const z=(n)=>n?n:`<span class="tbl-zero">0</span>`;
+        const lbl=isToday?'Today':new Date(parseInt(day.dayId)).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+        const z=n=>n||`<span class="t-zero">0</span>`;
         return`<tr>
-          <td style="font-weight:700;font-size:12px">${label}</td>
+          <td style="font-weight:700;font-size:12px;white-space:nowrap">${lbl}</td>
           <td>${dt.knocked}</td><td>${z(dt.spoke)}</td><td>${z(dt.speed)}</td>
           <td>${z(dt.pres)}</td><td>${z(dt.close)}</td>
-          <td class="${dt.sale?'tbl-sale':''}">${dt.sale}</td>
-          <td style="color:var(--amber)">${z(dt.comeback)}</td>
+          <td class="${dt.sale?'t-sale':''}">${dt.sale}</td>
+          <td class="${dt.comeback?'t-cb':''}">${z(dt.comeback)}</td>
         </tr>`;
-      }).join('')}
-      </tbody>
+      }).join('')}</tbody>
     </table>
     </div>
   </div>`;
 }
-
-function fRow(lbl,n,denom,mx,isGreen=false){
+function fRow(lbl,n,denom,mx,green=false){
   const w=mx?Math.round(n/mx*100):0;
   const p=denom?Math.round(n/denom*100)+'%':'—';
-  return`<div class="funnel-row">
-    <div class="funnel-lbl">${lbl}</div>
-    <div class="funnel-n">${n}</div>
-    <div class="funnel-pct">${p!=='—'?p:''}</div>
-    <div class="funnel-bar-bg"><div class="funnel-bar${isGreen?' style="background:var(--green)"':''}" style="width:${w}%${isGreen?';background:var(--green)':''}"></div></div>
+  return`<div class="fr">
+    <div class="fr-l">${lbl}</div>
+    <div class="fr-n">${n}</div>
+    <div class="fr-p">${p!=='—'?p:''}</div>
+    <div class="fr-bg"><div class="fr-bar" style="width:${w}%;${green?'background:var(--green)':''}"></div></div>
   </div>`;
 }
 
@@ -1001,26 +926,19 @@ function showPage(name,btn){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   btn.classList.add('active');
-  if(name==='history')renderHistory();
-  if(name==='stats')renderStats();
+  if(name==='history') renderHistory();
+  if(name==='stats') renderStats();
   document.getElementById('content').scrollTop=0;
 }
 
 // ════════════════════════════════════════════
 // UTILS
 // ════════════════════════════════════════════
-function showToast(msg){
-  const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),1800);
-}
-function shakeEl(id){
-  const e=document.getElementById(id);
-  e.style.borderColor='var(--red)';e.style.boxShadow='0 0 0 3px var(--red-dim)';e.focus();
-  setTimeout(()=>{e.style.borderColor='';e.style.boxShadow='';},1500);
-}
-function escH(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1900);}
+function shakeEl(id){const e=document.getElementById(id);if(!e)return;e.style.borderColor='var(--red)';e.style.boxShadow='0 0 0 3px var(--red-dim)';e.focus();setTimeout(()=>{e.style.borderColor='';e.style.boxShadow='';},1400);}
+function escH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
-// Close modal on backdrop tap
+// Close modal on backdrop
 document.getElementById('spoke-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
 
 // ════════════════════════════════════════════
@@ -1028,11 +946,8 @@ document.getElementById('spoke-modal').addEventListener('click',function(e){if(e
 // ════════════════════════════════════════════
 renderSessionUI();
 updateCounters();
-// If there's an active session on reload, re-show address section
-(function(){
-  const sess=getActiveSess();
-  if(sess){loadPostcode(sess.postcode);}
-})();
+// Reload address list if session was active when page last closed
+(function(){const sess=getActiveSess();if(sess)loadPostcode(sess.postcode);})();
 </script>
 </body>
 </html>
