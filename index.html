@@ -462,74 +462,152 @@ function renderLaps(){
 }
 
 // ════════════════════════════════════════════
-// POSTCODE + MAP + ADDRESS LOOKUP
+// POSTCODE + ADDRESS LOOKUP (multi-source)
 // ════════════════════════════════════════════
 async function loadPostcode(pc){
   const sec=document.getElementById('addr-section');
   const listEl=document.getElementById('addr-list');
   const countEl=document.getElementById('addr-count');
   sec.style.display='block';
-  listEl.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted)"><span class="spin"></span>Looking up addresses for ${pc}…</div>`;
   countEl.textContent='';
-
-  // Reset filter to active
   addrFilter='active';
-  document.querySelectorAll('.ftab').forEach((t,i)=>{t.classList.toggle('active',i===0);});
+  document.querySelectorAll('.ftab').forEach((t,i)=>t.classList.toggle('active',i===0));
 
-  // Fetch addresses via Overpass (OpenStreetMap) — free, no key needed
-  const found = await fetchViaOverpass(pc);
-  if(found) return;
+  listEl.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted)"><span class="spin"></span>Getting coordinates…</div>`;
 
-  // Fallback — manual entry
-  showManualFallback(pc, listEl, countEl);
-}
-
-async function fetchViaOverpass(pc){
-  const listEl=document.getElementById('addr-list');
-  const countEl=document.getElementById('addr-count');
-  // Query for all OSM elements tagged with this postcode
-  const q=`[out:json][timeout:20];(node["addr:postcode"="${pc}"];way["addr:postcode"="${pc}"];);out center;`;
+  // Source 1: postcodes.io — lat/lng (always free, no key)
+  let lat=null,lng=null;
   try{
-    const r=await fetch('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q));
-    if(!r.ok) throw new Error('Overpass error');
+    const r=await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(pc)}`);
     const d=await r.json();
-    if(!d.elements||!d.elements.length) return false;
+    if(d.status===200){lat=d.result.latitude;lng=d.result.longitude;}
+  }catch(e){}
 
-    // Filter to elements that have a house number or name
-    const raw=d.elements.filter(e=>e.tags&&(e.tags['addr:housenumber']||e.tags['addr:housename']));
-    if(!raw.length) return false;
+  if(!lat){
+    showManualFallback(pc,listEl,countEl,'Could not find postcode.');
+    return;
+  }
 
-    // Build address list
-    addrList=raw.map((e,i)=>{
-      const t=e.tags;
-      const num=t['addr:housenumber']||t['addr:housename']||String(i+1);
-      const street=t['addr:street']||t['addr:place']||t['addr:locality']||'';
-      const label=(num+(street?' '+street:'')).trim();
-      return{id:'a_'+i,number:num,label,result:null,speed:null,pres:null,close:null,sale:null,notes:'',ts:null,entryId:null};
-    }).sort((a,b)=>{
-      const na=parseInt(a.number),nb=parseInt(b.number);
-      if(!isNaN(na)&&!isNaN(nb)) return na-nb;
-      return a.number.localeCompare(b.number);
-    });
+  listEl.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted)"><span class="spin"></span>Searching addresses from 3 sources…</div>`;
 
-    // Merge back any existing entries from this session
+  // Run Sources 2, 3, 4 in parallel
+  const [r1,r2,r3] = await Promise.allSettled([
+    fetchOverpassByPostcode(pc),        // Source 2: Overpass by postcode tag
+    fetchOverpassByRadius(lat,lng),     // Source 3: Overpass by radius around centroid
+    fetchNominatim(pc,lat,lng),         // Source 4: Nominatim geocoder
+  ]);
+
+  // Merge & deduplicate by normalised house number
+  const seen=new Set();
+  const merged=[];
+  [r1,r2,r3].forEach(r=>{
+    if(r.status==='fulfilled'&&Array.isArray(r.value)){
+      r.value.forEach(a=>{
+        const key=normNum(a.number)+'|'+normNum(a.street||'');
+        if(key.length>1&&!seen.has(key)){seen.add(key);merged.push(a);}
+      });
+    }
+  });
+
+  // Sort numerically then alpha
+  merged.sort((a,b)=>{
+    const na=parseInt(a.number),nb=parseInt(b.number);
+    if(!isNaN(na)&&!isNaN(nb)) return na-nb;
+    return String(a.number).localeCompare(String(b.number));
+  });
+
+  if(merged.length>0){
+    addrList=merged.map((a,i)=>({...a,id:'a_'+i}));
     const sess=getActiveSess();
     if(sess) mergeEntries(sess);
-
     renderAddrList();
-    showToast(`${addrList.length} addresses found ✓`);
-    return true;
-  }catch(err){
-    console.warn('Overpass failed:',err);
-    return false;
+    showToast(`${addrList.length} addresses loaded ✓`);
+  } else {
+    showManualFallback(pc,listEl,countEl,'No addresses found in OpenStreetMap for this postcode.');
   }
 }
 
-function showManualFallback(pc, listEl, countEl){
+function normNum(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,'');}
+
+function makeAddr(num,street){
+  const n=String(num||'').trim();
+  const s=String(street||'').trim();
+  return{id:'',number:n,street:s,label:(n+(s?' '+s:'')).trim(),result:null,speed:null,pres:null,close:null,sale:null,notes:'',ts:null,entryId:null};
+}
+
+function parseOverpass(d){
+  if(!d.elements||!d.elements.length) return [];
+  return d.elements
+    .filter(e=>e.tags&&(e.tags['addr:housenumber']||e.tags['addr:housename']))
+    .map(e=>{
+      const t=e.tags;
+      const num=t['addr:housenumber']||t['addr:housename']||'';
+      const street=t['addr:street']||t['addr:place']||t['addr:locality']||'';
+      return makeAddr(num,street);
+    }).filter(a=>a.number);
+}
+
+// Source 2: Overpass by postcode tag — tries both spaced and unspaced, 2 endpoints
+async function fetchOverpassByPostcode(pc){
+  const variants=[pc, pc.replace(/\s/g,'')];
+  const endpoints=['https://overpass-api.de/api/interpreter','https://lz4.overpass-api.de/api/interpreter'];
+  for(const ep of endpoints){
+    for(const p of variants){
+      try{
+        const q=`[out:json][timeout:15];(node["addr:postcode"="${p}"];way["addr:postcode"="${p}"];);out center;`;
+        const r=await fetch(ep+'?data='+encodeURIComponent(q));
+        if(!r.ok) continue;
+        const d=await r.json();
+        const res=parseOverpass(d);
+        if(res.length>0){console.log('Overpass postcode found',res.length,'via',ep,'for',p);return res;}
+      }catch(e){continue;}
+    }
+  }
+  return [];
+}
+
+// Source 3: Overpass radius query around the postcode centroid
+async function fetchOverpassByRadius(lat,lng){
+  try{
+    // 200m radius catches most UK postcode footprints (avg ~80m across)
+    const q=`[out:json][timeout:15];(node(around:200,${lat},${lng})["addr:housenumber"];way(around:200,${lat},${lng})["addr:housenumber"];);out center;`;
+    const r=await fetch('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q));
+    if(!r.ok) return [];
+    const d=await r.json();
+    const res=parseOverpass(d);
+    console.log('Overpass radius found',res.length);
+    return res;
+  }catch(e){return [];}
+}
+
+// Source 4: Nominatim (OSM geocoder) — returns buildings/addresses by postcode
+async function fetchNominatim(pc,lat,lng){
+  try{
+    // Primary: search by postcode in GB
+    const url=`https://nominatim.openstreetmap.org/search?postcode=${encodeURIComponent(pc)}&countrycodes=gb&format=json&addressdetails=1&limit=50&dedupe=1`;
+    const r=await fetch(url,{headers:{'Accept-Language':'en-GB','User-Agent':'KnockTrack/1.0'}});
+    if(!r.ok) return [];
+    const d=await r.json();
+    const addrs=d
+      .filter(item=>item.address&&(item.address.house_number||item.address.building))
+      .map(item=>{
+        const a=item.address;
+        const num=a.house_number||a.building||'';
+        const street=a.road||a.pedestrian||a.street||'';
+        return makeAddr(num,street);
+      }).filter(a=>a.number);
+    console.log('Nominatim found',addrs.length);
+    return addrs;
+  }catch(e){return [];}
+}
+
+function showManualFallback(pc,listEl,countEl,reason=''){
+  if(!listEl) listEl=document.getElementById('addr-list');
+  if(!countEl) countEl=document.getElementById('addr-count');
   countEl.textContent='';
   listEl.innerHTML=`
     <div style="background:var(--amber-dim);border:1px solid var(--amber-border);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;font-size:13px;color:var(--amber)">
-      ⚠ No OSM address data found for <b>${pc}</b>. Enter house numbers manually below.
+      ⚠ ${reason||'No address data found'} for <b>${pc}</b> — enter doors manually below.
     </div>
     <div style="display:flex;gap:8px;align-items:flex-end">
       <div style="flex:1">
