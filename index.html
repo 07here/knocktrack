@@ -233,6 +233,15 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 .spin{display:inline-block;width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--green);border-radius:50%;animation:spin 0.7s linear infinite;vertical-align:middle;margin-right:6px;}
 @keyframes spin{to{transform:rotate(360deg);}}
 .api-note{font-size:11px;color:var(--muted);text-align:center;padding:6px 0 2px;}
+#settings-btn{background:none;border:1px solid var(--border2);border-radius:8px;padding:5px 8px;cursor:pointer;font-size:16px;color:var(--muted);line-height:1;}
+#settings-btn.keyed{border-color:var(--green-border);color:var(--green);}
+/* Settings modal */
+#settings-modal{display:none;position:fixed;inset:0;z-index:200;background:rgba(15,23,42,0.45);backdrop-filter:blur(3px);align-items:flex-end;}
+#settings-modal.open{display:flex;}
+#settings-inner{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius) var(--radius) 0 0;padding:20px 16px calc(20px + var(--safe-bot));width:100%;max-width:480px;margin:0 auto;box-shadow:var(--shadow-md);}
+.key-status{font-size:12px;font-weight:700;margin-top:6px;padding:6px 10px;border-radius:6px;}
+.key-status.ok{background:var(--green-dim);color:var(--green);}
+.key-status.missing{background:var(--amber-dim);color:var(--amber);}
 </style>
 </head>
 <body>
@@ -248,6 +257,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
     <div id="hright">
       <div id="live-badge">● LIVE</div>
       <button id="new-day-btn" onclick="confirmNewDay()">New day</button>
+      <button id="settings-btn" onclick="openSettings()" title="API Settings">⚙</button>
     </div>
   </div>
   <div id="counter-bar">
@@ -337,6 +347,29 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 </div>
 
 </div><!-- /app -->
+
+<!-- SETTINGS MODAL -->
+<div id="settings-modal">
+  <div id="settings-inner">
+    <div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:4px">⚙ API Settings</div>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:16px">OS Places API key from <b>osdatahub.os.uk</b></div>
+    <label class="fl" for="key-input">Your API key</label>
+    <input type="text" id="key-input" placeholder="Paste your OS Places API key here" autocomplete="off" autocorrect="off" spellcheck="false" style="font-size:13px;font-family:monospace">
+    <div id="key-status" class="key-status missing">No key saved — address lookup will use free sources only</div>
+    <div style="font-size:12px;color:var(--muted);margin-top:10px;line-height:1.6">
+      1. Go to <b>osdatahub.os.uk</b><br>
+      2. Sign up free → API Dashboard → New Project<br>
+      3. Add <b>OS Places API</b> → copy your key → paste above
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button class="btn btn-outline btn-sm" style="flex:1" onclick="closeSettings()">Cancel</button>
+      <button class="btn btn-green btn-sm" style="flex:2" onclick="saveKey()">Save key</button>
+    </div>
+    <div style="margin-top:10px;text-align:center">
+      <button style="background:none;border:none;color:var(--red);font-size:12px;cursor:pointer;font-family:inherit" onclick="clearKey()">Remove saved key</button>
+    </div>
+  </div>
+</div>
 
 <!-- SPOKE MODAL -->
 <div id="spoke-modal">
@@ -462,7 +495,42 @@ function renderLaps(){
 }
 
 // ════════════════════════════════════════════
-// POSTCODE + ADDRESS LOOKUP (multi-source)
+// SETTINGS / API KEY
+// ════════════════════════════════════════════
+const KEY_SK='kt_os_key';
+function getOSKey(){return localStorage.getItem(KEY_SK)||'';}
+function openSettings(){
+  const k=getOSKey();
+  document.getElementById('key-input').value=k;
+  updateKeyStatus(k);
+  document.getElementById('settings-modal').classList.add('open');
+}
+function closeSettings(){document.getElementById('settings-modal').classList.remove('open');}
+function saveKey(){
+  const k=document.getElementById('key-input').value.trim();
+  if(!k){shakeEl('key-input');return;}
+  localStorage.setItem(KEY_SK,k);
+  updateKeyStatus(k);
+  closeSettings();
+  showToast('API key saved ✓');
+}
+function clearKey(){
+  if(!confirm('Remove saved API key?'))return;
+  localStorage.removeItem(KEY_SK);
+  document.getElementById('key-input').value='';
+  updateKeyStatus('');
+  showToast('Key removed');
+}
+function updateKeyStatus(k){
+  const el=document.getElementById('key-status');
+  const btn=document.getElementById('settings-btn');
+  if(k){el.textContent='✓ OS Places API key active';el.className='key-status ok';btn.classList.add('keyed');}
+  else{el.textContent='No key saved — using free sources only';el.className='key-status missing';btn.classList.remove('keyed');}
+}
+document.getElementById('settings-modal').addEventListener('click',function(e){if(e.target===this)closeSettings();});
+
+// ════════════════════════════════════════════
+// POSTCODE + ADDRESS LOOKUP
 // ════════════════════════════════════════════
 async function loadPostcode(pc){
   const sec=document.getElementById('addr-section');
@@ -473,9 +541,24 @@ async function loadPostcode(pc){
   addrFilter='active';
   document.querySelectorAll('.ftab').forEach((t,i)=>t.classList.toggle('active',i===0));
 
-  listEl.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted)"><span class="spin"></span>Getting coordinates…</div>`;
+  const osKey=getOSKey();
+  listEl.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted)"><span class="spin"></span>${osKey?'Searching OS Places…':'Looking up addresses…'}</div>`;
 
-  // Source 1: postcodes.io — lat/lng (always free, no key)
+  // Primary: OS Places if key is saved
+  if(osKey){
+    const result=await fetchOSPlaces(pc,osKey);
+    if(result.length>0){
+      addrList=result;
+      const sess=getActiveSess();
+      if(sess)mergeEntries(sess);
+      renderAddrList();
+      showToast(`${addrList.length} addresses loaded ✓`);
+      return;
+    }
+    listEl.innerHTML=`<div style="padding:10px 12px;background:var(--amber-dim);border:1px solid var(--amber-border);border-radius:var(--radius-sm);font-size:13px;color:var(--amber);margin-bottom:10px">⚠ OS Places returned no results for <b>${pc}</b>. Trying free sources…</div>`;
+  }
+
+  // Fallback: get lat/lng then 3 free sources in parallel
   let lat=null,lng=null;
   try{
     const r=await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(pc)}`);
@@ -483,122 +566,114 @@ async function loadPostcode(pc){
     if(d.status===200){lat=d.result.latitude;lng=d.result.longitude;}
   }catch(e){}
 
-  if(!lat){
-    showManualFallback(pc,listEl,countEl,'Could not find postcode.');
-    return;
-  }
-
-  listEl.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted)"><span class="spin"></span>Searching addresses from 3 sources…</div>`;
-
-  // Run Sources 2, 3, 4 in parallel
-  const [r1,r2,r3] = await Promise.allSettled([
-    fetchOverpassByPostcode(pc),        // Source 2: Overpass by postcode tag
-    fetchOverpassByRadius(lat,lng),     // Source 3: Overpass by radius around centroid
-    fetchNominatim(pc,lat,lng),         // Source 4: Nominatim geocoder
+  const [r1,r2,r3]=await Promise.allSettled([
+    fetchOverpassByPostcode(pc),
+    lat?fetchOverpassByRadius(lat,lng):Promise.resolve([]),
+    fetchNominatim(pc),
   ]);
 
-  // Merge & deduplicate by normalised house number
-  const seen=new Set();
-  const merged=[];
+  const seen=new Set();const merged=[];
   [r1,r2,r3].forEach(r=>{
     if(r.status==='fulfilled'&&Array.isArray(r.value)){
       r.value.forEach(a=>{
-        const key=normNum(a.number)+'|'+normNum(a.street||'');
-        if(key.length>1&&!seen.has(key)){seen.add(key);merged.push(a);}
+        const key=normNum(a.number)+'|'+normNum(a.street);
+        if(key.replace(/\|/g,'').length>0&&!seen.has(key)){seen.add(key);merged.push(a);}
       });
     }
   });
 
-  // Sort numerically then alpha
-  merged.sort((a,b)=>{
+  const sorted=sortByRoadNum(merged).map((a,i)=>({...a,id:'a_'+i}));
+  if(sorted.length>0){
+    addrList=sorted;
+    const sess=getActiveSess();
+    if(sess)mergeEntries(sess);
+    renderAddrList();
+    showToast(`${addrList.length} addresses found ✓`);
+  } else {
+    showManualFallback(pc,listEl,countEl,'No address data found');
+  }
+}
+
+// OS Places API
+async function fetchOSPlaces(pc,apiKey){
+  try{
+    const clean=pc.replace(/\s/g,'');
+    const r=await fetch(`https://api.os.uk/search/places/v1/postcode?postcode=${encodeURIComponent(clean)}&key=${apiKey}&maxresults=100`);
+    if(!r.ok){if(r.status===401)showToast('⚠ OS API key invalid — check ⚙ Settings');return[];}
+    const d=await r.json();
+    if(!d.results||!d.results.length)return[];
+    const addrs=d.results.map(item=>{
+      const p=item.DPA||item.LPI||{};
+      const sub=p.SUB_BUILDING_NAME||'';
+      const num=p.BUILDING_NUMBER||p.BUILDING_NAME||sub||'';
+      const street=p.THOROUGHFARE_NAME||p.DEPENDENT_THOROUGHFARE_NAME||'';
+      const parts=[sub,p.BUILDING_NUMBER,p.BUILDING_NAME,street].filter(Boolean);
+      const label=[...new Set(parts)].join(' ');
+      return makeAddr(num||sub,street,label);
+    }).filter(a=>a.number);
+    return sortByRoadNum(addrs).map((a,i)=>({...a,id:'a_'+i}));
+  }catch(e){console.warn('OS Places:',e);return[];}
+}
+
+function sortByRoadNum(arr){
+  return[...arr].sort((a,b)=>{
+    const sa=(a.street||'').toLowerCase().trim();
+    const sb=(b.street||'').toLowerCase().trim();
+    if(sa!==sb)return sa.localeCompare(sb);
     const na=parseInt(a.number),nb=parseInt(b.number);
-    if(!isNaN(na)&&!isNaN(nb)) return na-nb;
+    if(!isNaN(na)&&!isNaN(nb))return na-nb;
     return String(a.number).localeCompare(String(b.number));
   });
-
-  if(merged.length>0){
-    addrList=merged.map((a,i)=>({...a,id:'a_'+i}));
-    const sess=getActiveSess();
-    if(sess) mergeEntries(sess);
-    renderAddrList();
-    showToast(`${addrList.length} addresses loaded ✓`);
-  } else {
-    showManualFallback(pc,listEl,countEl,'No addresses found in OpenStreetMap for this postcode.');
-  }
 }
 
 function normNum(s){return String(s||'').trim().toLowerCase().replace(/\s+/g,'');}
 
-function makeAddr(num,street){
-  const n=String(num||'').trim();
-  const s=String(street||'').trim();
-  return{id:'',number:n,street:s,label:(n+(s?' '+s:'')).trim(),result:null,speed:null,pres:null,close:null,sale:null,notes:'',ts:null,entryId:null};
+function makeAddr(num,street,label){
+  const n=String(num||'').trim();const s=String(street||'').trim();
+  return{id:'',number:n,street:s,label:label||(n+(s?' '+s:'')).trim(),result:null,speed:null,pres:null,close:null,sale:null,notes:'',ts:null,entryId:null};
 }
 
 function parseOverpass(d){
-  if(!d.elements||!d.elements.length) return [];
+  if(!d.elements||!d.elements.length)return[];
   return d.elements
     .filter(e=>e.tags&&(e.tags['addr:housenumber']||e.tags['addr:housename']))
-    .map(e=>{
-      const t=e.tags;
-      const num=t['addr:housenumber']||t['addr:housename']||'';
-      const street=t['addr:street']||t['addr:place']||t['addr:locality']||'';
-      return makeAddr(num,street);
-    }).filter(a=>a.number);
+    .map(e=>{const t=e.tags;return makeAddr(t['addr:housenumber']||t['addr:housename']||'',t['addr:street']||t['addr:place']||'');})
+    .filter(a=>a.number);
 }
 
-// Source 2: Overpass by postcode tag — tries both spaced and unspaced, 2 endpoints
 async function fetchOverpassByPostcode(pc){
-  const variants=[pc, pc.replace(/\s/g,'')];
+  const variants=[pc,pc.replace(/\s/g,'')];
   const endpoints=['https://overpass-api.de/api/interpreter','https://lz4.overpass-api.de/api/interpreter'];
-  for(const ep of endpoints){
-    for(const p of variants){
-      try{
-        const q=`[out:json][timeout:15];(node["addr:postcode"="${p}"];way["addr:postcode"="${p}"];);out center;`;
-        const r=await fetch(ep+'?data='+encodeURIComponent(q));
-        if(!r.ok) continue;
-        const d=await r.json();
-        const res=parseOverpass(d);
-        if(res.length>0){console.log('Overpass postcode found',res.length,'via',ep,'for',p);return res;}
-      }catch(e){continue;}
-    }
-  }
-  return [];
+  for(const ep of endpoints){for(const p of variants){
+    try{
+      const q=`[out:json][timeout:12];(node["addr:postcode"="${p}"];way["addr:postcode"="${p}"];);out center;`;
+      const r=await fetch(ep+'?data='+encodeURIComponent(q));
+      if(!r.ok)continue;
+      const res=parseOverpass(await r.json());
+      if(res.length>0)return res;
+    }catch(e){continue;}
+  }}
+  return[];
 }
 
-// Source 3: Overpass radius query around the postcode centroid
 async function fetchOverpassByRadius(lat,lng){
   try{
-    // 200m radius catches most UK postcode footprints (avg ~80m across)
-    const q=`[out:json][timeout:15];(node(around:200,${lat},${lng})["addr:housenumber"];way(around:200,${lat},${lng})["addr:housenumber"];);out center;`;
+    const q=`[out:json][timeout:12];(node(around:200,${lat},${lng})["addr:housenumber"];way(around:200,${lat},${lng})["addr:housenumber"];);out center;`;
     const r=await fetch('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q));
-    if(!r.ok) return [];
-    const d=await r.json();
-    const res=parseOverpass(d);
-    console.log('Overpass radius found',res.length);
-    return res;
-  }catch(e){return [];}
+    if(!r.ok)return[];
+    return parseOverpass(await r.json());
+  }catch(e){return[];}
 }
 
-// Source 4: Nominatim (OSM geocoder) — returns buildings/addresses by postcode
-async function fetchNominatim(pc,lat,lng){
+async function fetchNominatim(pc){
   try{
-    // Primary: search by postcode in GB
-    const url=`https://nominatim.openstreetmap.org/search?postcode=${encodeURIComponent(pc)}&countrycodes=gb&format=json&addressdetails=1&limit=50&dedupe=1`;
-    const r=await fetch(url,{headers:{'Accept-Language':'en-GB','User-Agent':'KnockTrack/1.0'}});
-    if(!r.ok) return [];
-    const d=await r.json();
-    const addrs=d
-      .filter(item=>item.address&&(item.address.house_number||item.address.building))
-      .map(item=>{
-        const a=item.address;
-        const num=a.house_number||a.building||'';
-        const street=a.road||a.pedestrian||a.street||'';
-        return makeAddr(num,street);
-      }).filter(a=>a.number);
-    console.log('Nominatim found',addrs.length);
-    return addrs;
-  }catch(e){return [];}
+    const r=await fetch(`https://nominatim.openstreetmap.org/search?postcode=${encodeURIComponent(pc)}&countrycodes=gb&format=json&addressdetails=1&limit=50&dedupe=1`,{headers:{'Accept-Language':'en-GB','User-Agent':'KnockTrack/1.0'}});
+    if(!r.ok)return[];
+    return(await r.json())
+      .filter(i=>i.address&&(i.address.house_number||i.address.building))
+      .map(i=>{const a=i.address;return makeAddr(a.house_number||a.building||'',a.road||a.pedestrian||'');})
+      .filter(a=>a.number);
+  }catch(e){return[];}
 }
 
 function showManualFallback(pc,listEl,countEl,reason=''){
