@@ -541,24 +541,26 @@ async function loadPostcode(pc){
   addrFilter='active';
   document.querySelectorAll('.ftab').forEach((t,i)=>t.classList.toggle('active',i===0));
 
-  const osKey=getOSKey();
-  listEl.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted)"><span class="spin"></span>${osKey?'Searching OS Places…':'Looking up addresses…'}</div>`;
+  listEl.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted)"><span class="spin"></span>Loading addresses for ${escH(pc)}…</div>`;
 
-  // Primary: OS Places if key is saved
-  if(osKey){
-    const result=await fetchOSPlaces(pc,osKey);
-    if(result.length>0){
-      addrList=result;
-      const sess=getActiveSess();
-      if(sess)mergeEntries(sess);
-      renderAddrList();
-      showToast(`${addrList.length} addresses loaded ✓`);
-      return;
+  // Primary: VPS backend (Homedata API — full address data, same result on every device)
+  try{
+    const r=await fetch(`http://72.62.211.249:3000/api/addresses?postcode=${encodeURIComponent(pc)}`);
+    if(r.ok){
+      const d=await r.json();
+      if(d.results&&d.results.length>0){
+        addrList=d.results.map((a,i)=>({...a,id:'a_'+i,result:null,speed:null,pres:null,close:null,sale:null,notes:'',ts:null,entryId:null}));
+        const sess=getActiveSess();
+        if(sess)mergeEntries(sess);
+        renderAddrList();
+        showToast(`${addrList.length} addresses loaded ✓`);
+        return;
+      }
     }
-    listEl.innerHTML=`<div style="padding:10px 12px;background:var(--amber-dim);border:1px solid var(--amber-border);border-radius:var(--radius-sm);font-size:13px;color:var(--amber);margin-bottom:10px">⚠ OS Places returned no results for <b>${pc}</b>. Trying free sources…</div>`;
-  }
+  }catch(e){console.warn('VPS lookup failed, trying free sources:',e);}
 
-  // Fallback: get lat/lng then 3 free sources in parallel
+  // Fallback: free sources in parallel
+  listEl.innerHTML=`<div style="padding:20px;text-align:center;color:var(--muted)"><span class="spin"></span>Searching backup sources…</div>`;
   let lat=null,lng=null;
   try{
     const r=await fetch(`https://api.postcodes.io/postcodes/${encodeURIComponent(pc)}`);
