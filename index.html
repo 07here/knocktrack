@@ -316,6 +316,25 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
         </div>
         <div id="addr-count" class="addr-count"></div>
         <div id="addr-list"></div>
+        <!-- Missing door quick-add -->
+        <div id="missing-door-bar" style="display:none;margin-top:10px;border-top:1px solid var(--border);padding-top:10px">
+          <div id="missing-door-toggle" onclick="toggleMissingDoor()" style="display:flex;align-items:center;gap:6px;cursor:pointer;color:var(--muted);font-size:13px;font-weight:600;padding:4px 0">
+            <span id="missing-door-icon" style="font-size:16px">＋</span> Missing a door?
+          </div>
+          <div id="missing-door-form" style="display:none;margin-top:8px">
+            <div style="display:flex;gap:8px;align-items:flex-end">
+              <div style="flex:1">
+                <label class="fl" for="missing-house">House no. / name</label>
+                <input type="text" id="missing-house" placeholder="e.g. 45 or Flat 2" autocomplete="off" autocorrect="off">
+              </div>
+              <div style="flex:1">
+                <label class="fl" for="missing-street">Street (optional)</label>
+                <input type="text" id="missing-street" placeholder="e.g. The Drive" autocomplete="off">
+              </div>
+              <button class="btn btn-green btn-sm" onclick="addMissingDoor()" style="flex-shrink:0">Add</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -553,6 +572,7 @@ async function loadPostcode(pc){
         const sess=getActiveSess();
         if(sess)mergeEntries(sess);
         renderAddrList();
+        document.getElementById('missing-door-bar').style.display='block';
         showToast(`${addrList.length} addresses loaded ✓`);
         return;
       }
@@ -590,6 +610,7 @@ async function loadPostcode(pc){
     const sess=getActiveSess();
     if(sess)mergeEntries(sess);
     renderAddrList();
+    document.getElementById('missing-door-bar').style.display='block';
     showToast(`${addrList.length} addresses found ✓`);
   } else {
     showManualFallback(pc,listEl,countEl,'No address data found');
@@ -676,6 +697,35 @@ async function fetchNominatim(pc){
       .map(i=>{const a=i.address;return makeAddr(a.house_number||a.building||'',a.road||a.pedestrian||'');})
       .filter(a=>a.number);
   }catch(e){return[];}
+}
+
+function toggleMissingDoor(){
+  const form=document.getElementById('missing-door-form');
+  const icon=document.getElementById('missing-door-icon');
+  const open=form.style.display==='none';
+  form.style.display=open?'block':'none';
+  icon.textContent=open?'✕':'＋';
+  if(open) document.getElementById('missing-house').focus();
+}
+
+function addMissingDoor(){
+  const house=document.getElementById('missing-house').value.trim();
+  const street=document.getElementById('missing-street').value.trim();
+  if(!house){shakeEl('missing-house');return;}
+  const label=(house+(street?' '+street:'')).trim();
+  const newAddr={
+    id:'a_manual_'+Date.now(),
+    number:house,street,label,
+    result:null,speed:null,pres:null,close:null,sale:null,
+    notes:'',ts:null,entryId:null
+  };
+  addrList.unshift(newAddr);
+  document.getElementById('missing-house').value='';
+  document.getElementById('missing-street').value='';
+  document.getElementById('missing-door-form').style.display='none';
+  document.getElementById('missing-door-icon').textContent='＋';
+  renderAddrList();
+  showToast('Door added ✓');
 }
 
 function showManualFallback(pc,listEl,countEl,reason=''){
